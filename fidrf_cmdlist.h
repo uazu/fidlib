@@ -28,7 +28,7 @@ typedef struct RunBuf {
    double *coef;
    char *cmd;
    int mov_cnt;		// Number of bytes to memmove
-   double buf[0];
+   double buf[1];       // is resized in fid_run_newbuf()
 } RunBuf;
 
 
@@ -76,9 +76,9 @@ typedef unsigned char uchar;
 static double 
 filter_step(void *fbuf, double iir) {
    double *coef= ((RunBuf*)fbuf)->coef;
-   uchar *cmd= ((RunBuf*)fbuf)->cmd;
+   char *cmd= ((RunBuf*)fbuf)->cmd;
    double *buf= &((RunBuf*)fbuf)->buf[0];
-   uchar ch;
+   char ch;
    double fir= 0;
    double tmp= buf[0];
    int cnt;
@@ -228,7 +228,7 @@ fid_run_new(FidFilter *filt, double (**funcpp)(void *,double)) {
 
    // Allocate worst-case sizes for temporary arrays
    coef_tmp= ALLOC_ARR(coef_max= filt_cnt + 1, double);
-   cmd_tmp= ALLOC_ARR(cmd_max= filt_cnt + 4, char);
+   cmd_tmp= (uchar*)ALLOC_ARR(cmd_max= filt_cnt + 4, char);
    dp= coef_tmp;
    cp= cmd_tmp;
    prev= 0;
@@ -237,7 +237,7 @@ fid_run_new(FidFilter *filt, double (**funcpp)(void *,double)) {
    while (filt->len) {
       int n_iir, n_fir, cnt;
       double *iir, *fir;
-      double adj;
+      double adj = 0.0;
       if (filt->typ == 'F' && filt->len == 1) {
 	 gain *= filt->val[0];
 	 filt= FFNEXT(filt);
@@ -386,18 +386,18 @@ fid_run_new(FidFilter *filt, double (**funcpp)(void *,double)) {
 
 void *
 fid_run_newbuf(void *run) {
-   Run *rr= run;
+   Run *rr= (Run*)run;
    RunBuf *rb;
    int siz;
 
    if (rr->magic != 0x64966325)
       error("Bad handle passed to fid_run_newbuf()");
    
-   siz= rr->buf_size ? rr->buf_size : 1;   // Minimum one element to avoid problems
-   rb= Alloc(sizeof(RunBuf) + siz * sizeof(double));
+   siz= rr->buf_size > 0 ? rr->buf_size - 1 : 0;   // Fist element is part of sizeof(RunBuf)
+   rb= (RunBuf*)Alloc(sizeof(RunBuf) + siz * sizeof(double));
    rb->coef= rr->coef;
    rb->cmd= rr->cmd;
-   rb->mov_cnt= (siz-1) * sizeof(double);
+   rb->mov_cnt= siz * sizeof(double);
    // rb->buf[] already zerod
 
    return rb;
@@ -409,7 +409,7 @@ fid_run_newbuf(void *run) {
 
 int 
 fid_run_bufsize(void *run) {
-   Run *rr= run;
+   Run *rr= (Run*)run;
    int siz;
 
    if (rr->magic != 0x64966325)
@@ -430,8 +430,8 @@ fid_run_bufsize(void *run) {
 
 void 
 fid_run_initbuf(void *run, void *buf) {
-   Run *rr= run;
-   RunBuf *rb= buf;
+   Run *rr= (Run*)run;
+   RunBuf *rb= (RunBuf*)buf;
    int siz;
 
    if (rr->magic != 0x64966325)
@@ -453,7 +453,7 @@ fid_run_initbuf(void *run, void *buf) {
 
 void 
 fid_run_zapbuf(void *buf) {
-   RunBuf *rb= buf;
+   RunBuf *rb= (RunBuf*)buf;
    memset(rb->buf, 0, rb->mov_cnt + sizeof(double));
 }   
    
