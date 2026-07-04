@@ -10,15 +10,11 @@ This repository contains 'fidlib', my run-time filter design and
 execution library, and 'firun', a tool for running fidlib filters from
 the command-line.
 
-> 'Fidlib' is Copyright (c) 2002-2004 Jim Peters <http://uazu.net/>
-> and is released under the GNU Lesser General Public License (LGPL)
-> version 2.1 as published by the Free Software Foundation.  See the
-> file COPYING_LIB for details, or visit: http://www.fsf.org/licenses/
+>  'Fidlib' is Copyright (c) 2002-2004 Jim Peters <http://uazu.net/>
+>  and is released under the MIT license.  See the file LICENSE-MIT.
 
-> 'Firun' is Copyright (c) 2004 Jim Peters <http://uazu.net/>
-> and is released under the GNU General Public License (GPL)
-> version 2 as published by the Free Software Foundation.  See the
-> file COPYING for details, or visit: http://www.fsf.org/licenses/
+>  'Firun' is Copyright (c) 2004 Jim Peters <http://uazu.net/> and is
+>  released under the MIT license.  See the file LICENSE-MIT.
 
 To use 'fidlib' (one way at least):
 
@@ -32,7 +28,7 @@ To use 'firun':
 
 - Type "firun" or "./firun" for an overview
 - See firun.txt for full docs, and fidlib.txt for filter types
-  
+
 To build 'firun':
 
 - On Linux, run 'mk-firun' to build it

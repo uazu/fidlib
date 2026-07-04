@@ -1,11 +1,9 @@
 //
-//	Combined-filter based filter-running code.  
+//	Combined-filter based filter-running code.
 //
 //        Copyright (c) 2002-2003 Jim Peters <http://uazu.net/>.  This
-//        file is released under the GNU Lesser General Public License
-//        (LGPL) version 2.1 as published by the Free Software
-//        Foundation.  See the file COPYING_LIB for details, or visit
-//        <http://www.fsf.org/licenses/licenses.html>.
+//        file is released under the MIT license.  See the file
+//        LICENSE-MIT.
 //
 //	Convolves all the filters into a single IIR/FIR pair, and runs
 //	that directly through static code.  Compiled with GCC -O6 on
@@ -32,7 +30,7 @@ typedef struct RunBuf {
    double buf[0];
 } RunBuf;
 
-static double 
+static double
 filter_step(void *rb, double val) {
    Run *rr= ((RunBuf*)rb)->run;
    double *buf= ((RunBuf*)rb)->buf;
@@ -40,7 +38,7 @@ filter_step(void *rb, double val) {
 
    // Shift the whole internal array up one
    memmove(buf+1, buf, (rr->n_buf-1)*sizeof(buf[0]));
-   
+
    // Do IIR
    for (a= 1; a<rr->n_iir; a++) val -= rr->iir[a] * buf[a];
    buf[0]= val;
@@ -58,7 +56,7 @@ filter_step(void *rb, double val) {
 //	void* handle, and a function to call to execute the filter.
 //	Working buffers for the filter instances must be allocated
 //	separately using fid_run_newbuf().  This allows many
-//	simultaneous instances of the filter to be run.  
+//	simultaneous instances of the filter to be run.
 //
 //	The returned handle must be released using fid_run_free().
 //
@@ -74,20 +72,20 @@ fid_run_new(FidFilter *filt, double (**funcpp)(void *,double)) {
    ff= rr->filt;
    if (ff->typ != 'I') goto bad;
    rr->n_iir= ff->len;
-   rr->iir= ff->val;	
+   rr->iir= ff->val;
    ff= FFNEXT(ff);
    if (ff->typ != 'F') goto bad;
    rr->n_fir= ff->len;
    rr->fir= ff->val;
    ff= FFNEXT(ff);
    if (ff->len) goto bad;
-   
+
    rr->n_buf= rr->n_fir > rr->n_iir ? rr->n_fir : rr->n_iir;
-   
+
    *funcpp= filter_step;
-   
+
    return rr;
-   
+
  bad:
    error("Internal error: fid_run_new() expecting IIR+FIR in flattened filter");
    return 0;
@@ -104,7 +102,7 @@ fid_run_newbuf(void *run) {
 
    if (rr->magic != 0x64966325)
       error("Bad handle passed to fid_run_newbuf()");
-   
+
    rb= Alloc(sizeof(RunBuf) + rr->n_buf * sizeof(double));
    rb->run= run;
    // rb->buf[] already zerod
@@ -127,7 +125,7 @@ fid_run_zapbuf(void *buf) {
 //	Delete an instance
 //
 
-void 
+void
 fid_run_freebuf(void *runbuf) {
    free(runbuf);
 }
@@ -136,7 +134,7 @@ fid_run_freebuf(void *runbuf) {
 //	Delete the filter
 //
 
-void 
+void
 fid_run_free(void *run) {
    Run *rr= run;
    free(rr->filt);

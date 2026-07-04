@@ -2,9 +2,7 @@
 //	Run fidlib filters on raw data
 //
 //        Copyright (c) 2004 Jim Peters <http://uazu.net/>.
-//        Released under the GNU GPL version 2 as published by the
-//        Free Software Foundation.  See the file COPYING for details,
-//        or visit <http://www.gnu.org/copyleft/gpl.html>.
+//        Released under the MIT license.  See the file LICENSE-MIT for details.
 //
 //	Note that this is fast, but speed increases can still be
 //	obtained with special-purpose code.  As an example, one tested
@@ -16,7 +14,7 @@
 
 #define NL "\n"
 
-char *usage_text= 
+char *usage_text=
 "Usage: firun [options] <sampling_rate> <in_out_formats> <filter-specs...>"
 NL ""
 NL "Reads ASCII or raw data from STDIN, filters it, writes ASCII or raw data "
@@ -76,11 +74,11 @@ error(char *fmt, ...) {
    exit(1);
 }
 
-static void 
+static void
 usage() {
    error("based on fidlib version %s.\n"
-	 "Copyright (c) 2004 Jim Peters http://uazu.net, licensed under the GNU GPL v2.\n"
-	 "\n%s", fid_version(), usage_text);
+         "Copyright (c) 2004 Jim Peters http://uazu.net, licensed under the MIT license.\n"
+         "\n%s", fid_version(), usage_text);
 }
 
 static void *
@@ -135,39 +133,39 @@ decode_spec(char *spec, int in) {
    int pass;
 
    // Check for specials
-   if (0 == strcmp(spec, "%I")) { 
+   if (0 == strcmp(spec, "%I")) {
       if (!in) error("%%I not valid as an output spec");
-      f_impulse= 1; return 0; 
+      f_impulse= 1; return 0;
    }
-   if (0 == strcmp(spec, "%S")) { 
+   if (0 == strcmp(spec, "%S")) {
       if (!in) error("%%S not valid as an output spec");
-      f_step= 1; return 0; 
+      f_step= 1; return 0;
    }
 
    // First pass to check everything and count length
    // Second pass to fill in string
    for (pass= 0; pass<2; pass++) {
       for (p= spec; *p; ) {
-	 int cnt= 0;
-	 int typ= *p++;
-	 if (!strchr(in ? "_abwWcsSf" : "abwWcsSf", typ)) 
-	    error("Bad %s format, unknown type '%c': %s",
-		  in ? "input" : "output", typ, spec);
-	 if (isdigit(*p)) {
-	    while (isdigit(*p)) cnt= cnt*10 + *p++ - '0';
-	 } else {
-	    cnt= 1;
-	 }
-	 if (pass == 0) {
-	    len += cnt;
-	 } else {
-	    while (cnt-- > 0) 
-	       *sp++= typ;
-	 }
+         int cnt= 0;
+         int typ= *p++;
+         if (!strchr(in ? "_abwWcsSf" : "abwWcsSf", typ))
+            error("Bad %s format, unknown type '%c': %s",
+                  in ? "input" : "output", typ, spec);
+         if (isdigit(*p)) {
+            while (isdigit(*p)) cnt= cnt*10 + *p++ - '0';
+         } else {
+            cnt= 1;
+         }
+         if (pass == 0) {
+            len += cnt;
+         } else {
+            while (cnt-- > 0)
+               *sp++= typ;
+         }
       }
       if (pass == 0) {
-	 rv= ALLOC_ARR(len+1, char);
-	 sp= rv;
+         rv= ALLOC_ARR(len+1, char);
+         sp= rv;
       }
    }
 
@@ -178,11 +176,11 @@ decode_spec(char *spec, int in) {
 //	Count the number of channels represented in an expanded spec
 //
 
-static int 
+static int
 spec_count(char *spec) {
    int cnt= 0;
    char typ;
-   while ((typ= *spec++)) 
+   while ((typ= *spec++))
       if (typ != '_') cnt++;
    return cnt;
 }
@@ -192,7 +190,7 @@ spec_count(char *spec) {
 //	and filt[].
 //
 
-static void 
+static void
 parse_filters(char *txt) {
    FidFilter *ff, **arr;
    n_filt= 0;
@@ -204,8 +202,8 @@ parse_filters(char *txt) {
       // Realloc each time, but not big hit
       arr= ALLOC_ARR(n_filt+1, FidFilter*);
       if (filt) {
-	 memcpy(arr, filt, n_filt * sizeof(FidFilter*));
-	 free(filt);
+         memcpy(arr, filt, n_filt * sizeof(FidFilter*));
+         free(filt);
       }
       filt= arr;
       filt[n_filt++]= ff;
@@ -227,7 +225,7 @@ output(char *op, double val) {
    int iv;
 
    switch (*op++) {
-    case 'a': 
+    case 'a':
        len= sprintf(buf, "%.16g%c", val, *op ? ' ' : '\n'); break;
     case 'b': iv= (val+1) * 128; iv= iv<0 ? 0 : iv>255 ? 255 : iv;
        buf[0]= iv; len= 1; break;
@@ -245,7 +243,7 @@ output(char *op, double val) {
        *(float*)&buf[0]= val; len= sizeof(float); break;
     case 0:
        error("Internal error in output() -- ran out of format characters"); break;
-    default: 
+    default:
        error("Internal error in output() -- bad format '%c'", op[-1]); break;
    }
 
@@ -260,7 +258,7 @@ output(char *op, double val) {
 //	EOF.
 //
 
-void 
+void
 refill_input() {
    if (!inbuf) {
       int len= 16384;	// 100ms of data at 44100Hz 16-bit stereo
@@ -280,9 +278,9 @@ refill_input() {
    while (inend != inbufend && !ineof) {
       int rv= read(0, inend, inbufend-inend);
       if (rv <= 0) {
-	 if (rv == 0) { ineof= 1; continue; }
-	 if (errno == EINTR || errno == EAGAIN) continue;
-	 error("Read error on stdin: %s", strerror(errno));
+         if (rv == 0) { ineof= 1; continue; }
+         if (errno == EINTR || errno == EAGAIN) continue;
+         error("Read error on stdin: %s", strerror(errno));
       }
       inend += rv;
    }
@@ -311,77 +309,77 @@ input(char **ipp) {
    while (1) {
       switch (*ip++) {
        case '_':
-	  if (avail < 1) goto badeof;
-	  inp++; continue;
+          if (avail < 1) goto badeof;
+          inp++; continue;
        case 'a':
-	  {
-	     int cnt;
-	     uchar *tmp;
+          {
+             int cnt;
+             uchar *tmp;
 
-	     // Skip WS (maybe lots of it)
-	     while (1) {
-		while (inp < inend && (ch= *inp) && 
-		       (isspace(ch) || ch == ',' || ch == ';')) 
-		   inp++;
-		if (inp != inend) break;
-		refill_input();
-	     }
-	     if (inend - inp < 128 && !ineof) refill_input();
-	     if (inp == inend) goto badeof;
+             // Skip WS (maybe lots of it)
+             while (1) {
+                while (inp < inend && (ch= *inp) &&
+                       (isspace(ch) || ch == ',' || ch == ';'))
+                   inp++;
+                if (inp != inend) break;
+                refill_input();
+             }
+             if (inend - inp < 128 && !ineof) refill_input();
+             if (inp == inend) goto badeof;
 
-	     val= strtod(inp, (char**)&tmp);
-	     if (inp == tmp) 
-		error("Bad floating-point value:\n %.20s", inp);
-	     inp= tmp;
-	     if (inp < inend && isspace(*inp)) inp++;
-	     break;
-	  }
+             val= strtod(inp, (char**)&tmp);
+             if (inp == tmp)
+                error("Bad floating-point value:\n %.20s", inp);
+             inp= tmp;
+             if (inp < inend && isspace(*inp)) inp++;
+             break;
+          }
        case 'b':
-	  if (avail < 1) goto badeof;
-	  ch= *inp++;
-	  val= (*inp++ - 128) / 128.0; 
-	  break;
+          if (avail < 1) goto badeof;
+          ch= *inp++;
+          val= (*inp++ - 128) / 128.0;
+          break;
        case 'w':
-	  if (avail < 2) goto badeof;
-	  ch1= *inp++; ch2= *inp++;
-	  val= (ch1 + (ch2<<8) - 32768) / 32768.0;
-	  break;
+          if (avail < 2) goto badeof;
+          ch1= *inp++; ch2= *inp++;
+          val= (ch1 + (ch2<<8) - 32768) / 32768.0;
+          break;
        case 'W':
-	  if (avail < 2) goto badeof;
-	  ch1= *inp++; ch2= *inp++;
-	  val= ((ch1<<8) + ch2 - 32768) / 32768.0;
-	  break;
+          if (avail < 2) goto badeof;
+          ch1= *inp++; ch2= *inp++;
+          val= ((ch1<<8) + ch2 - 32768) / 32768.0;
+          break;
        case 'c':
-	  if (avail < 1) goto badeof;
-	  ch= *inp++;
-	  val= ((ch^128) - 128) / 128.0; 
-	  break;
+          if (avail < 1) goto badeof;
+          ch= *inp++;
+          val= ((ch^128) - 128) / 128.0;
+          break;
        case 's':
-	  if (avail < 2) goto badeof;
-	  ch1= *inp++; ch2= *inp++;
-	  val= (((ch1 + (ch2<<8)) ^ 32768) - 32768) / 32768.0;
-	  break;
+          if (avail < 2) goto badeof;
+          ch1= *inp++; ch2= *inp++;
+          val= (((ch1 + (ch2<<8)) ^ 32768) - 32768) / 32768.0;
+          break;
        case 'S':
-	  if (avail < 2) goto badeof;
-	  ch1= *inp++; ch2= *inp++;
-	  val= ((((ch2<<8) + ch1) ^ 32768) - 32768) / 32768.0;
-	  break;
+          if (avail < 2) goto badeof;
+          ch1= *inp++; ch2= *inp++;
+          val= ((((ch2<<8) + ch1) ^ 32768) - 32768) / 32768.0;
+          break;
        case 'f':
-	  if (avail < sizeof(float)) goto badeof;
-	  memcpy((void*)&fv, inp, sizeof(float));
-	  inp += sizeof(float);
-	  val= fv;
-	  break;
+          if (avail < sizeof(float)) goto badeof;
+          memcpy((void*)&fv, inp, sizeof(float));
+          inp += sizeof(float);
+          val= fv;
+          break;
        case 0:
-	  error("Ran out of input format characters in input()");
+          error("Ran out of input format characters in input()");
        default:
-	  error("Bad format code: '%c'", ip[-1]);
+          error("Bad format code: '%c'", ip[-1]);
       }
-      
+
       // We've read a value.  Now handle trailing '_'s
-      while (*ip == '_') { 
-	 if (inp == inend) goto badeof;
-	 inp++; ip++; 
+      while (*ip == '_') {
+         if (inp == inend) goto badeof;
+         inp++; ip++;
       }
       *ipp= ip;
       return val;
@@ -396,9 +394,9 @@ input(char **ipp) {
 //	Main
 //
 
-int 
+int
 main(int ac, char **av) {
-   char dmy; 
+   char dmy;
    int a, b;
 
    // Decode arguments
@@ -406,53 +404,53 @@ main(int ac, char **av) {
    while (ac > 0 && av[0][0] == '-') {
       char ch, *p= 1 + *av++; ac--;
       while ((ch= *p++)) {
-	 switch (ch) {
-	  case 'd':
-	     if (ac <= 0) usage();
-	     ac--; f_dur= *av++;
-	     break;
-	  case 'D':
-	     f_dump= 1;
-	     break;
-	  case 'r':
-	     if (ac-- <= 0) usage();
-	     if (1 != sscanf(*av++, "%d %c", &f_resp, &dmy) ||
-		 f_resp <= 0)
-		error("Bad argument to -r: %s", av[-1]);
-	     break;
-	  case 'p':
-	     f_phase= 1;
-	     break;
-	  case 'L':
-	     fid_list_filters(stdout);
-	     return 0;
-	  default:
-	     usage();
-	     break;
-	 }
+         switch (ch) {
+          case 'd':
+             if (ac <= 0) usage();
+             ac--; f_dur= *av++;
+             break;
+          case 'D':
+             f_dump= 1;
+             break;
+          case 'r':
+             if (ac-- <= 0) usage();
+             if (1 != sscanf(*av++, "%d %c", &f_resp, &dmy) ||
+                 f_resp <= 0)
+                error("Bad argument to -r: %s", av[-1]);
+             break;
+          case 'p':
+             f_phase= 1;
+             break;
+          case 'L':
+             fid_list_filters(stdout);
+             return 0;
+          default:
+             usage();
+             break;
+         }
       }
    }
-   
+
    // Get sampling rate
    {
       if (ac-- < 1) usage();
       if (1 != sscanf(*av++, "%lf %c", &rate, &dmy))
-	 usage();
+         usage();
       if (rate <= 0) error("Bad sampling rate: %g", rate);
    }
-   
+
    // Get in/out spec
    {
       char *p, *spec= *av++;
       if (ac-- < 1) usage();
       p= strchr(spec, '/');
       if (p) {
-	 p[0]= 0;
-	 ispec= decode_spec(spec, 1);
-	 ospec= decode_spec(p+1, 0);
+         p[0]= 0;
+         ispec= decode_spec(spec, 1);
+         ospec= decode_spec(p+1, 0);
       } else {
-	 ispec= decode_spec(spec, 1);
-	 ospec= decode_spec(spec, 0);
+         ispec= decode_spec(spec, 1);
+         ospec= decode_spec(spec, 0);
       }
    }
 
@@ -463,11 +461,11 @@ main(int ac, char **av) {
       char *arg, *p;
 
       for (a= 0; a<ac; a++)
-	 len += 1 + strlen(av[a]);
+         len += 1 + strlen(av[a]);
 
       arg= Alloc(len+1);
       for (p= arg; ac>0; ac--, av++)
-	 p += sprintf(p, "%s ", *av);
+         p += sprintf(p, "%s ", *av);
       p[-1]= 0;
 
       parse_filters(arg);
@@ -477,16 +475,16 @@ main(int ac, char **av) {
    // Dump filters, calculate delay
    if (f_dump) {
       for (a= 0; a<n_filt; a++) {
-	 FidFilter *ff= filt[a];
-	 int val= fid_calc_delay(ff);
-	 printf("# Filter %d signal delay: %d samples\n", a+1, val);
-	 while (ff->typ) {
-	    printf(ff->typ == 'F' ? "  x" : "  /");
-	    for (b= 0; b<ff->len; b++)
-	       printf(" %.16g", ff->val[b]);
-	    ff= FFNEXT(ff);
-	    printf(ff->typ ? "\n" : ";\n");
-	 }
+         FidFilter *ff= filt[a];
+         int val= fid_calc_delay(ff);
+         printf("# Filter %d signal delay: %d samples\n", a+1, val);
+         while (ff->typ) {
+            printf(ff->typ == 'F' ? "  x" : "  /");
+            for (b= 0; b<ff->len; b++)
+               printf(" %.16g", ff->val[b]);
+            ff= FFNEXT(ff);
+            printf(ff->typ ? "\n" : ";\n");
+         }
       }
       return 0;
    }
@@ -494,18 +492,18 @@ main(int ac, char **av) {
    // Check everything
    {
       n_chan= spec_count(ospec);
-      if (ispec && spec_count(ispec) != n_chan) 
-	 error("Input and output formats must have the same number of channels");
-      
+      if (ispec && spec_count(ispec) != n_chan)
+         error("Input and output formats must have the same number of channels");
+
       if (f_resp) {
-	 int cnt= n_filt * (f_phase ? 2 : 1);
-	 if (n_chan != cnt && n_chan != cnt+1)
-	    error("Expecting %d or %d output channels for response output, not %d",
-		  cnt, cnt+1, n_chan);
+         int cnt= n_filt * (f_phase ? 2 : 1);
+         if (n_chan != cnt && n_chan != cnt+1)
+            error("Expecting %d or %d output channels for response output, not %d",
+                  cnt, cnt+1, n_chan);
       } else {
-	 if (n_filt != 1 && n_chan != n_filt) 
-	    error("Number of filters (%d) must match number of channels (%d) if more than \n"
-		  "one filter is specified", n_filt, n_chan);
+         if (n_filt != 1 && n_chan != n_filt)
+            error("Number of filters (%d) must match number of channels (%d) if more than \n"
+                  "one filter is specified", n_filt, n_chan);
       }
    }
 
@@ -514,18 +512,18 @@ main(int ac, char **av) {
    if (f_dur) {
       int val;
       char *p= f_dur;
-      
+
       dur= 0;
       while (*p) {
-	 val= 0;
-	 if (!isdigit(*p)) error("Bad duration specification: '%s'", f_dur);
-	 while (isdigit(*p)) val= val * 10 + *p++ - '0';
-	 switch (*p) {
-	  case 'h': dur += val * 60 * 60 * rate; p++; break;
-	  case 'm': dur += val * 60 * rate; p++; break;
-	  case 's': dur += val * rate; p++; break;
-	  default: dur += val; break;
-	 }
+         val= 0;
+         if (!isdigit(*p)) error("Bad duration specification: '%s'", f_dur);
+         while (isdigit(*p)) val= val * 10 + *p++ - '0';
+         switch (*p) {
+          case 'h': dur += val * 60 * 60 * rate; p++; break;
+          case 'm': dur += val * 60 * rate; p++; break;
+          case 's': dur += val * rate; p++; break;
+          default: dur += val; break;
+         }
       }
    }
 
@@ -533,15 +531,15 @@ main(int ac, char **av) {
    if (f_resp) {
       int f_freq= n_chan == (n_filt * (f_phase ? 2 : 1) + 1);
       for (a= 0; a<=f_resp; a++) {
-	 double freq= a * 0.5 / f_resp;
-	 char *op= ospec;
-	 if (f_freq) op= output(op, rate * freq);
-	 for (b= 0; b<n_filt; b++) {
-	    double pha;
-	    double amp= fid_response_pha(filt[b], freq, &pha);
-	    op= output(op, amp);
-	    if (f_phase) op= output(op, pha);
-	 }
+         double freq= a * 0.5 / f_resp;
+         char *op= ospec;
+         if (f_freq) op= output(op, rate * freq);
+         for (b= 0; b<n_filt; b++) {
+            double pha;
+            double amp= fid_response_pha(filt[b], freq, &pha);
+            op= output(op, amp);
+            if (f_phase) op= output(op, pha);
+         }
       }
       return 0;
    }
@@ -557,44 +555,43 @@ main(int ac, char **av) {
       void **buf= ALLOC_ARR(n_chan, void*);
 
       for (a= 0; a<n_chan; a++) {
-	 run[a]= fid_run_new(filt[n_filt==1 ? 0 : a], &dostep[a]);
-	 buf[a]= fid_run_newbuf(run[a]);
+         run[a]= fid_run_new(filt[n_filt==1 ? 0 : a], &dostep[a]);
+         buf[a]= fid_run_newbuf(run[a]);
       }
 
       while (dur != 0) {
-	 if (dur > 0) dur--;
-	 
-	 // Handle impulse and step response generation
-	 if (noin) {
-	    char *op= ospec;
-	    for (a= 0; a<n_chan; a++) 
-	       op= output(op, dostep[a](buf[a], val));
-	    val= nextval;
-	    continue;
-	 }
+         if (dur > 0) dur--;
 
-	 // Read from input
-	 {
-	    char *ip= ispec;
-	    char *op= ospec;
-	    int chan= 0;
-	    int ch;
+         // Handle impulse and step response generation
+         if (noin) {
+            char *op= ospec;
+            for (a= 0; a<n_chan; a++)
+               op= output(op, dostep[a](buf[a], val));
+            val= nextval;
+            continue;
+         }
 
-	    if (inend - inp < 128 && !ineof)
-	       refill_input();
+         // Read from input
+         {
+            char *ip= ispec;
+            char *op= ospec;
+            int chan= 0;
+            int ch;
 
-	    if (inend == inp) return 0;
+            if (inend - inp < 128 && !ineof)
+               refill_input();
 
-	    while (*ip) {
-	       op= output(op, dostep[chan](buf[chan], input(&ip)));
-	       chan++;
-	    }
-	 }
+            if (inend == inp) return 0;
+
+            while (*ip) {
+               op= output(op, dostep[chan](buf[chan], input(&ip)));
+               chan++;
+            }
+         }
       }
    }
 
    return 0;
 }
 
-// END //	  
-
+// END //

@@ -2,14 +2,8 @@ Fidlib: Run-time filter design and execution library
 ----------------------------------------------------
 
   Copyright (c) 2002-2004 Jim Peters <http://uazu.net/>.  This library
-  is released under the GNU Lesser General Public License (LGPL) version
-  2.1 as published by the Free Software Foundation.  See the file
-  COPYING_LIB, or visit <http://www.fsf.org/licenses/licenses.html>.
-  
-  "This library is distributed in the hope that it will be useful, 
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE."
-  
+  is released under the MIT license.  See the file LICENSE-MIT.
+
 This library was originally designed as a backend for the 'Fiview'
 application, and to provide performance filtering services to EEG
 applications, such as those in the OpenEEG project:
@@ -28,7 +22,7 @@ Jim
 --
  Jim Peters                  (_)/=\~/_(_)                 jim/uazu.net
                           (_)  /=\  ~/_  (_)
- Uazú                  (_)    /=\    ~/_    (_)                http://
+ UazÃº                  (_)    /=\    ~/_    (_)                http://
  Brighton, UK       (_) ____ /=\ ____ ~/_ ____ (_)            uazu.net
 
 ------------------------------------------------------------------------
@@ -289,7 +283,7 @@ double freq0, freq1, minfreq0, minfreq1;
 int minadj;
 
 fid_rewrite_spec(spec, freq0, freq1, adj,
-		 &fullspec, &minspec, &minfreq0, &minfreq1, &minadj);
+                 &fullspec, &minspec, &minfreq0, &minfreq1, &minadj);
 free(fullspec);
 free(minspec);
 
@@ -368,7 +362,7 @@ Here is an illustration of typical code:
   FidRun *run;
   FidFunc *funcp;
   void *fbuf1, *fbuf2;
-  
+
   run= fid_run_new(filt, &funcp);
   fbuf1= fid_run_newbuf(run);
   fbuf2= fid_run_newbuf(run);
@@ -630,7 +624,7 @@ types, just the ones that seemed useful to add, mostly oriented towards
 IIR filters, and building on Dr Tony Fisher's 'mkfilter' as a base.  You
 can construct other types of filters in coefficient form and run them
 through fidlib directly using a call to fid_cv_array().  Other filters
-may be added in future.  
+may be added in future.
 
 Note that for pure FIR filters, especially longer ones, fidlib may be
 useful for calculating their response, however they may be better

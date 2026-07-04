@@ -3,10 +3,8 @@
 //	-----------------------------------
 //
 //        Copyright (c) 2002-2004 Jim Peters <http://uazu.net/>.  This
-//        file is released under the GNU Lesser General Public License
-//        (LGPL) version 2.1 as published by the Free Software
-//        Foundation.  See the file COPYING_LIB for details, or visit
-//        <http://www.fsf.org/licenses/licenses.html>.
+//        file is released under the MIT License.  See the file
+//        LICENSE-MIT.
 //
 //	The code in this file was written to go with the Fiview app
 //	(http://uazu.net/fiview/), but it may be used as a library for
@@ -23,9 +21,9 @@
 //
 //	Robert Bristow-Johnson's EQ cookbook formulae:
 //	  http://www.harmony-central.com/Computer/Programming/Audio-EQ-Cookbook.txt
-//	
+//
 
-#define VERSION "0.9.10"
+#define VERSION "0.9.11"
 
 //
 //	Filter specification string
@@ -35,7 +33,7 @@
 //	specify the filter, or it can be used with the frequency or
 //	frequency range missing, in which case default values are
 //	picked up from values passed directly to the routine.
-//	
+//
 //	The spec consists of a series of letters usually followed by
 //	the order of the filter and then by any other parameters
 //	required, preceded by slashes.  For example:
@@ -69,15 +67,15 @@
 //	okay= fid_list_filters_buf(buf, buf+sizeof(buf));
 //
 //	// Calculate the response of the filter at a given frequency
-//	// (frequency is given as a proportion of the sampling rate, in 
-//	// the range 0 to 0.5).  If phase is returned, then this is 
+//	// (frequency is given as a proportion of the sampling rate, in
+//	// the range 0 to 0.5).  If phase is returned, then this is
 //	// given in the range 0 to 1 (for 0 to 2*pi).
 //	resp= fid_response(filt, freq);
 //	resp= fid_response_pha(filt, freq, &phase);
 //
 //	// Estimate the signal delay caused by a particular filter, in samples
 //	delay= fid_calc_delay(filt);
-//	
+//
 //	// Run a given filter (this will do JIT filter compilation if this is
 //	// implemented for this processor / OS)
 //	run= fid_run_new(filt, &funcp);
@@ -93,7 +91,7 @@
 //	fid_run_freebuf(fbuf1);
 //	fid_run_free(run);
 //
-//	// If you need to allocate your own buffers separately for some 
+//	// If you need to allocate your own buffers separately for some
 //	// reason, then do it this way:
 //	run= fid_run_new(filt, &funcp);
 //	len= fid_run_bufsize(run);
@@ -109,30 +107,30 @@
 //	free(fbuf1);
 //	fid_run_free(run);
 //
-//	// Convert an arbitrary filter into a new filter which is a single 
-//	// IIR/FIR pair.  This is done by convolving the coefficients.  This 
-//	// flattened filter will give the same result, in theory.  However, 
-//	// in practice this will be less accurate, especially in cases where 
-//	// the limits of the floating point format are being reached (e.g. 
+//	// Convert an arbitrary filter into a new filter which is a single
+//	// IIR/FIR pair.  This is done by convolving the coefficients.  This
+//	// flattened filter will give the same result, in theory.  However,
+//	// in practice this will be less accurate, especially in cases where
+//	// the limits of the floating point format are being reached (e.g.
 //	// subtracting numbers with small highly significant differences).
 //	// The routine also ensures that the IIR first coefficient is 1.0.
 //	filt2= fid_flatten(filt);
 //	free(filt);
 //
 //	// Parse an entire filter-spec string possibly containing several FIR,
-//	// IIR and predefined filters and return it as a FidFilter at the given 
+//	// IIR and predefined filters and return it as a FidFilter at the given
 //	// location.  Stops at the first ,; or unmatched )]} character, or the end
 //	// of the string.  Returns a strdup'd error string on error, or else 0.
 //	err= fid_parse(double rate, char **pp, FidFilter **ffp);
 //
-//	// Set up your own fatal-error handler (default is to dump a message 
+//	// Set up your own fatal-error handler (default is to dump a message
 //	// to STDERR and exit on fatal conditions)
 //	fid_set_error_handler(&my_error_func);
 //
 //	// Get the version number of the library as a string (e.g. "1.0.0")
 //	txt= fid_version();
 //
-//	// Design a filter and reduce it to a list of all the non-const 
+//	// Design a filter and reduce it to a list of all the non-const
 //	// coefficients, which is returned in the given double[].  The number
 //	// of coefficients expected must be provided (as a check).
 //	#define N_COEF <whatever>
@@ -148,11 +146,11 @@
 //	free(full); free(min);
 //
 //	// Create a FidFilter based on coefficients provided in the
-//	// given double array.  
+//	// given double array.
 //	static double array[]= { 'I', 3, 1.0, 0.55, 0.77, 'F', 3, 1, -2, 1, 0 };
 //	filt= fid_cv_array(array);
 //
-//	// Join a number of filters into a single filter (and free them too, 
+//	// Join a number of filters into a single filter (and free them too,
 //	// if the first argument is 1)
 //	filt= fid_cat(0, filt1, filt2, filt3, filt4, 0);
 //
@@ -172,15 +170,15 @@
 //	elements, or whatever).  This is followed by a short bitmap
 //	which indicates which of the coefficients are constants,
 //	aiding code-generation.  Next comes the count of the following
-//	coefficients, as an int.  (These header fields normally takes 8 
-//	bytes, the same as a double, but this might depend on the 
-//	platform).  Then follow the coefficients, as doubles.  The next 
-//	sub-filter follows on straight after that.  The end of the list 
+//	coefficients, as an int.  (These header fields normally takes 8
+//	bytes, the same as a double, but this might depend on the
+//	platform).  Then follow the coefficients, as doubles.  The next
+//	sub-filter follows on straight after that.  The end of the list
 //	is marked by 8 zero bytes, meaning typ==0, cbm==0 and len==0.
 //
 //	The filter can be read with the aid of the FidFilter structure
-//	(giving typ, cbm, len and val[] elements) and the FFNEXT() 
-//	macro: using ff= FFNEXT(ff) steps to the next FidFilter 
+//	(giving typ, cbm, len and val[] elements) and the FFNEXT()
+//	macro: using ff= FFNEXT(ff) steps to the next FidFilter
 //	structure along the chain.
 //
 //	Note that within the sub-filters, coefficients are listed in
@@ -262,7 +260,7 @@ extern FidFilter *mkfilter(char *, ...);
 #ifdef T_MSVC
  #define STATIC_INLINE static __inline
 #else
- #define STATIC_INLINE static inline 
+ #define STATIC_INLINE static inline
 #endif
 
 // MinGW and MSVC fixes
@@ -274,7 +272,7 @@ extern FidFilter *mkfilter(char *, ...);
   #define snprintf _snprintf
  #endif
 // Not sure if we strictly need this still
- STATIC_INLINE double 
+ STATIC_INLINE double
  my_asinh(double val) {
     return log(val + sqrt(val*val + 1.0));
  }
@@ -288,7 +286,7 @@ extern FidFilter *mkfilter(char *, ...);
 
 static void (*error_handler)(char *err)= 0;
 
-static void 
+static void
 error(char *fmt, ...) {
    char buf[1024];
    va_list ap;
@@ -310,7 +308,7 @@ strdupf(char *fmt, ...) {
    int len;
    va_start(ap, fmt);
    len= vsnprintf(buf, sizeof(buf), fmt, ap);
-   if (len < 0 || len >= sizeof(buf)-1) 
+   if (len < 0 || len >= sizeof(buf)-1)
       error("strdupf exceeded buffer");
    rv= strdup(buf);
    if (!rv) error("Out of memory");
@@ -366,7 +364,7 @@ cmulr(double *aa, double fact) {
 //	Complex conjugate: aa= aa*
 //
 
-STATIC_INLINE void 
+STATIC_INLINE void
 cconj(double *aa) {
    aa[1]= -aa[1];
 }
@@ -388,18 +386,18 @@ cdiv(double *aa, double *bb) {
 //	Complex reciprocal: aa= 1/aa
 //
 
-STATIC_INLINE void 
+STATIC_INLINE void
 crecip(double *aa) {
    double fact= 1.0 / (aa[0] * aa[0] + aa[1] * aa[1]);
    aa[0] *= fact;
    aa[1] *= -fact;
-} 
-  
+}
+
 //
 //	Complex assign: aa= bb
 //
 
-STATIC_INLINE void 
+STATIC_INLINE void
 cass(double *aa, double *bb) {
    memcpy(aa, bb, 2*sizeof(double));  // Assigning doubles is really slow
 }
@@ -408,7 +406,7 @@ cass(double *aa, double *bb) {
 //	Complex assign: aa= (rr + ii*j)
 //
 
-STATIC_INLINE void 
+STATIC_INLINE void
 cassz(double *aa, double rr, double ii) {
    aa[0]= rr;
    aa[1]= ii;
@@ -418,7 +416,7 @@ cassz(double *aa, double rr, double ii) {
 //	Complex add: aa += bb
 //
 
-STATIC_INLINE void 
+STATIC_INLINE void
 cadd(double *aa, double *bb) {
    aa[0] += bb[0];
    aa[1] += bb[1];
@@ -428,7 +426,7 @@ cadd(double *aa, double *bb) {
 //	Complex add: aa += (rr + ii*j)
 //
 
-STATIC_INLINE void 
+STATIC_INLINE void
 caddz(double *aa, double rr, double ii) {
    aa[0] += rr;
    aa[1] += ii;
@@ -438,7 +436,7 @@ caddz(double *aa, double rr, double ii) {
 //	Complex subtract: aa -= bb
 //
 
-STATIC_INLINE void 
+STATIC_INLINE void
 csub(double *aa, double *bb) {
    aa[0] -= bb[0];
    aa[1] -= bb[1];
@@ -448,7 +446,7 @@ csub(double *aa, double *bb) {
 //	Complex subtract: aa -= (rr + ii*j)
 //
 
-STATIC_INLINE void 
+STATIC_INLINE void
 csubz(double *aa, double rr, double ii) {
    aa[0] -= rr;
    aa[1] -= ii;
@@ -458,7 +456,7 @@ csubz(double *aa, double rr, double ii) {
 //	Complex negate: aa= -aa
 //
 
-STATIC_INLINE void 
+STATIC_INLINE void
 cneg(double *aa) {
    aa[0]= -aa[0];
    aa[1]= -aa[1];
@@ -502,7 +500,7 @@ evaluate(double *rv, double *coef, int n_coef, double *in) {
 //	Housekeeping
 //
 
-void 
+void
 fid_set_error_handler(void (*rout)(char*)) {
    error_handler= rout;
 }
@@ -520,7 +518,7 @@ fid_version() {
 //	phase between 0 and two-pi.
 //
 
-double 
+double
 fid_response_pha(FidFilter *filt, double freq, double *phase) {
    double top[2], bot[2];
    double theta= freq * 2 * M_PI;
@@ -532,17 +530,17 @@ fid_response_pha(FidFilter *filt, double freq, double *phase) {
    bot[1]= 0;
    zz[0]= cos(theta);
    zz[1]= sin(theta);
-   
+
    while (filt->len) {
       double resp[2];
       int cnt= filt->len;
       evaluate(resp, filt->val, cnt, zz);
       if (filt->typ == 'I')
-	 cmul(bot, resp); 
+         cmul(bot, resp);
       else if (filt->typ == 'F')
-	 cmul(top, resp);
-      else 
-	 error("Unknown filter type %d in fid_response_pha()", filt->typ);
+         cmul(top, resp);
+      else
+         error("Unknown filter type %d in fid_response_pha()", filt->typ);
       filt= FFNEXT(filt);
    }
 
@@ -566,7 +564,7 @@ fid_response_pha(FidFilter *filt, double freq, double *phase) {
 //	can be inlined.
 //
 
-double 
+double
 fid_response(FidFilter *filt, double freq) {
    double top[2], bot[2];
    double theta= freq * 2 * M_PI;
@@ -578,17 +576,17 @@ fid_response(FidFilter *filt, double freq) {
    bot[1]= 0;
    zz[0]= cos(theta);
    zz[1]= sin(theta);
-   
+
    while (filt->len) {
       double resp[2];
       int cnt= filt->len;
       evaluate(resp, filt->val, cnt, zz);
       if (filt->typ == 'I')
-	 cmul(bot, resp); 
+         cmul(bot, resp);
       else if (filt->typ == 'F')
-	 cmul(top, resp);
-      else 
-	 error("Unknown filter type %d in fid_response()", filt->typ);
+         cmul(top, resp);
+      else
+         error("Unknown filter type %d in fid_response()", filt->typ);
       filt= FFNEXT(filt);
    }
 
@@ -604,13 +602,13 @@ fid_response(FidFilter *filt, double freq) {
 //	are complete.  This involves running test impulses through the
 //	filter several times.  The estimated delay in samples is
 //	returned.
-//	
+//
 //	Delays longer than 8,000,000 samples are not handled well, as
 //	the code drops out at this point rather than get stuck in an
 //	endless loop.
 //
 
-int 
+int
 fid_calc_delay(FidFilter *filt) {
    FidRun *run;
    FidFunc *dostep;
@@ -625,20 +623,20 @@ fid_calc_delay(FidFilter *filt) {
    // a reference point much further ahead in the impulse response.
    f1= fid_run_newbuf(run);
    f2= fid_run_newbuf(run);
-   
+
    tot= fabs(dostep(f1, 1.0));
    tot100= fabs(dostep(f2, 1.0));
    tot100 += fabs(dostep(f2, 0.0));
    tot100 += fabs(dostep(f2, 0.0));
    tot100 += fabs(dostep(f2, 0.0));
-   
+
    for (cnt= 1; cnt < 0x1000000; cnt++) {
       tot += fabs(dostep(f1, 0.0));
       tot100 += fabs(dostep(f2, 0.0));
       tot100 += fabs(dostep(f2, 0.0));
       tot100 += fabs(dostep(f2, 0.0));
       tot100 += fabs(dostep(f2, 0.0));
-      
+
       if (tot/tot100 >= 0.999) break;
    }
    fid_run_freebuf(f1);
@@ -648,7 +646,7 @@ fid_calc_delay(FidFilter *filt) {
    tot50= tot100/2;
    f1= fid_run_newbuf(run);
    tot= fabs(dostep(f1, 1.0));
-   for (cnt= 0; tot < tot50; cnt++) 
+   for (cnt= 0; tot < tot50; cnt++)
       tot += fabs(dostep(f1, 0.0));
    fid_run_freebuf(f1);
 
@@ -656,7 +654,7 @@ fid_calc_delay(FidFilter *filt) {
    fid_run_free(run);
    return cnt;
 }
-   
+
 
 //
 //	'mkfilter'-derived code
@@ -678,7 +676,7 @@ stack_filter(int order, int n_head, int n_val, ...) {
    int a, b, len;
 
    if (order == 0) return rv;
-   
+
    // Copy from ap
    va_start(ap, n_val);
    p= q= rv;
@@ -686,8 +684,8 @@ stack_filter(int order, int n_head, int n_val, ...) {
       p->typ= va_arg(ap, int);
       p->cbm= va_arg(ap, int);
       p->len= va_arg(ap, int);
-      for (b= 0; b<p->len; b++) 
-	 p->val[b]= va_arg(ap, double);
+      for (b= 0; b<p->len; b++)
+         p->val[b]= va_arg(ap, double);
       p= FFNEXT(p);
    }
    order--;
@@ -696,14 +694,14 @@ stack_filter(int order, int n_head, int n_val, ...) {
    len= ((char*)p)-((char*)q);
    if (len != FFCSIZE(n_head-1, n_val))
       error("Internal error; bad call to stack_filter(); length mismatch (%d,%d)",
-	    len, FFCSIZE(n_head-1, n_val));
-   
+            len, FFCSIZE(n_head-1, n_val));
+
    // Make as many additional copies as necessary
    while (order-- > 0) {
       memcpy(p, q, len);
       p= (void*)(len + (char*)p);
    }
-   
+
    // List is already terminated due to zeroed allocation
    return rv;
 }
@@ -713,17 +711,17 @@ stack_filter(int order, int n_head, int n_val, ...) {
 //	assumed that the gradient goes upwards from 'f0' to the peak,
 //	and then down again to 'f3'.  If there are any other curves,
 //	this routine will get confused and will come up with some
-//	frequency, although probably not the right one.  
+//	frequency, although probably not the right one.
 //
 //	Returns the frequency of the peak.
 //
 
-static double 
+static double
 search_peak(FidFilter *ff, double f0, double f3) {
    double f1, f2;
    double r1, r2;
    int a;
-   
+
    // Binary search, modified, taking two intermediate points.  Do 20
    // subdivisions, which should give 1/2^20 == 1e-6 accuracy compared
    // to original range.
@@ -734,9 +732,9 @@ search_peak(FidFilter *ff, double f0, double f3) {
       r1= fid_response(ff, f1);
       r2= fid_response(ff, f2);
       if (r1 > r2)	// Peak is either to the left, or between f1/f2
-	 f3= f2;
-      else	 	// Peak is either to the right, or between f1/f2
-	 f0= f1;
+         f3= f2;
+      else              // Peak is either to the right, or between f1/f2
+         f0= f1;
    }
    return (f0+f3)*0.5;
 }
@@ -764,7 +762,7 @@ do_lowpass(int mz, double freq) {
    rv= z2fidfilter(1.0, ~0);	// FIR is constant
    rv->val[0]= 1.0 / fid_response(rv, 0.0);
    return rv;
-}   
+}
 
 static FidFilter*
 do_highpass(int mz, double freq) {
@@ -794,19 +792,19 @@ do_bandstop(int mz, double f0, double f1) {
    rv= z2fidfilter(1.0, 5);	// FIR second coefficient is *non-const* for bandstop
    rv->val[0]= 1.0 / fid_response(rv, 0.0);	// Use 0Hz response as reference
    return rv;
-}   
+}
 
 
 //
 //	Information passed to individual filter design routines:
 //
-//	  double* rout(double rate, double f0, double f1, 
+//	  double* rout(double rate, double f0, double f1,
 //		       int order, int n_arg, double *arg);
 //
 //	'rate' is the sampling rate, or 1 if not set
-//	'f0' and 'f1' give the frequency or frequency range as a 
-//	 	proportion of the sampling rate
-//	'order' is the order of the filter (the integer passed immediately 
+//	'f0' and 'f1' give the frequency or frequency range as a
+//              proportion of the sampling rate
+//	'order' is the order of the filter (the integer passed immediately
 //		after the name)
 //	'n_arg' is the number of additional arguments for the filter
 //	'arg' gives the additional argument values: arg[n]
@@ -816,7 +814,7 @@ do_bandstop(int mz, double f0, double f1) {
 //
 //	See the previous description for the required meaning of the
 //	return value FidFilter list.
-//	
+//
 
 //
 //	Filter design routines and supporting code
@@ -907,7 +905,7 @@ des_lpbube(double rate, double f0, double f1, int order, int n_arg, double *arg)
    double tmp[MAXPZ];
    int a;
    bessel(order); memcpy(tmp, pol, order * sizeof(double));
-   butterworth(order); 
+   butterworth(order);
    for (a= 0; a<order; a++) pol[a] += (tmp[a]-pol[a]) * 0.01 * arg[0];
    //for (a= 1; a<order; a+=2) pol[a] += arg[1] * 0.01;
    return do_lowpass(BL, f0);
@@ -1015,9 +1013,9 @@ des_lpbq(double rate, double f0, double f1, int order, int n_arg, double *arg) {
    double cosv= cos(omega);
    double alpha= sin(omega) / 2 / arg[0];
    return stack_filter(order, 3, 7,
-		       'I', 0x0, 3, 1 + alpha, -2 * cosv, 1 - alpha,
-		       'F', 0x7, 3, 1.0, 2.0, 1.0,
-		       'F', 0x0, 1, (1-cosv) * 0.5);
+                       'I', 0x0, 3, 1 + alpha, -2 * cosv, 1 - alpha,
+                       'F', 0x7, 3, 1.0, 2.0, 1.0,
+                       'F', 0x0, 1, (1-cosv) * 0.5);
 }
 
 static FidFilter*
@@ -1026,9 +1024,9 @@ des_hpbq(double rate, double f0, double f1, int order, int n_arg, double *arg) {
    double cosv= cos(omega);
    double alpha= sin(omega) / 2 / arg[0];
    return stack_filter(order, 3, 7,
-		       'I', 0x0, 3, 1 + alpha, -2 * cosv, 1 - alpha,
-		       'F', 0x7, 3, 1.0, -2.0, 1.0,
-		       'F', 0x0, 1, (1+cosv) * 0.5);
+                       'I', 0x0, 3, 1 + alpha, -2 * cosv, 1 - alpha,
+                       'F', 0x7, 3, 1.0, -2.0, 1.0,
+                       'F', 0x0, 1, (1+cosv) * 0.5);
 }
 
 static FidFilter*
@@ -1037,9 +1035,9 @@ des_bpbq(double rate, double f0, double f1, int order, int n_arg, double *arg) {
    double cosv= cos(omega);
    double alpha= sin(omega) / 2 / arg[0];
    return stack_filter(order, 3, 7,
-		       'I', 0x0, 3, 1 + alpha, -2 * cosv, 1 - alpha,
-		       'F', 0x7, 3, 1.0, 0.0, -1.0,
-		       'F', 0x0, 1, alpha);
+                       'I', 0x0, 3, 1 + alpha, -2 * cosv, 1 - alpha,
+                       'F', 0x7, 3, 1.0, 0.0, -1.0,
+                       'F', 0x0, 1, alpha);
 }
 
 static FidFilter*
@@ -1048,8 +1046,8 @@ des_bsbq(double rate, double f0, double f1, int order, int n_arg, double *arg) {
    double cosv= cos(omega);
    double alpha= sin(omega) / 2 / arg[0];
    return stack_filter(order, 2, 6,
-		       'I', 0x0, 3, 1 + alpha, -2 * cosv, 1 - alpha,
-		       'F', 0x5, 3, 1.0, -2 * cosv, 1.0);
+                       'I', 0x0, 3, 1 + alpha, -2 * cosv, 1 - alpha,
+                       'F', 0x5, 3, 1.0, -2 * cosv, 1.0);
 }
 
 static FidFilter*
@@ -1058,8 +1056,8 @@ des_apbq(double rate, double f0, double f1, int order, int n_arg, double *arg) {
    double cosv= cos(omega);
    double alpha= sin(omega) / 2 / arg[0];
    return stack_filter(order, 2, 6,
-		       'I', 0x0, 3, 1 + alpha, -2 * cosv, 1 - alpha,
-		       'F', 0x0, 3, 1 - alpha, -2 * cosv, 1 + alpha);
+                       'I', 0x0, 3, 1 + alpha, -2 * cosv, 1 - alpha,
+                       'F', 0x0, 3, 1 - alpha, -2 * cosv, 1 + alpha);
 }
 
 static FidFilter*
@@ -1069,8 +1067,8 @@ des_pkbq(double rate, double f0, double f1, int order, int n_arg, double *arg) {
    double alpha= sin(omega) / 2 / arg[0];
    double A= pow(10, arg[1]/40);
    return stack_filter(order, 2, 6,
-		       'I', 0x0, 3, 1 + alpha/A, -2 * cosv, 1 - alpha/A,
-		       'F', 0x0, 3, 1 + alpha*A, -2 * cosv, 1 - alpha*A);
+                       'I', 0x0, 3, 1 + alpha/A, -2 * cosv, 1 - alpha/A,
+                       'F', 0x0, 3, 1 + alpha*A, -2 * cosv, 1 - alpha*A);
 }
 
 static FidFilter*
@@ -1081,14 +1079,14 @@ des_lsbq(double rate, double f0, double f1, int order, int n_arg, double *arg) {
    double A= pow(10, arg[1]/40);
    double beta= sqrt((A*A+1)/arg[0] - (A-1)*(A-1));
    return stack_filter(order, 2, 6,
-		       'I', 0x0, 3,
-		       (A+1) + (A-1)*cosv + beta*sinv,
-		       -2 * ((A-1) + (A+1)*cosv),
-		       (A+1) + (A-1)*cosv - beta*sinv,
-		       'F', 0x0, 3,
-		       A*((A+1) - (A-1)*cosv + beta*sinv),
-		       2*A*((A-1) - (A+1)*cosv),
-		       A*((A+1) - (A-1)*cosv - beta*sinv));
+                       'I', 0x0, 3,
+                       (A+1) + (A-1)*cosv + beta*sinv,
+                       -2 * ((A-1) + (A+1)*cosv),
+                       (A+1) + (A-1)*cosv - beta*sinv,
+                       'F', 0x0, 3,
+                       A*((A+1) - (A-1)*cosv + beta*sinv),
+                       2*A*((A-1) - (A+1)*cosv),
+                       A*((A+1) - (A-1)*cosv - beta*sinv));
 }
 
 static FidFilter*
@@ -1099,14 +1097,14 @@ des_hsbq(double rate, double f0, double f1, int order, int n_arg, double *arg) {
    double A= pow(10, arg[1]/40);
    double beta= sqrt((A*A+1)/arg[0] - (A-1)*(A-1));
    return stack_filter(order, 2, 6,
-		       'I', 0x0, 3,
-		       (A+1) - (A-1)*cosv + beta*sinv,
-		       2 * ((A-1) - (A+1)*cosv),
-		       (A+1) - (A-1)*cosv - beta*sinv,
-		       'F', 0x0, 3,
-		       A*((A+1) + (A-1)*cosv + beta*sinv),
-		       -2*A*((A-1) + (A+1)*cosv),
-		       A*((A+1) + (A-1)*cosv - beta*sinv));
+                       'I', 0x0, 3,
+                       (A+1) - (A-1)*cosv + beta*sinv,
+                       2 * ((A-1) - (A+1)*cosv),
+                       (A+1) - (A-1)*cosv - beta*sinv,
+                       'F', 0x0, 3,
+                       A*((A+1) + (A-1)*cosv + beta*sinv),
+                       -2*A*((A-1) + (A+1)*cosv),
+                       A*((A+1) + (A-1)*cosv - beta*sinv));
 }
 
 static FidFilter*
@@ -1121,9 +1119,9 @@ des_lpbl(double rate, double f0, double f1, int order, int n_arg, double *arg) {
    ff->len= max*2+1;
    ff->val[max]= tot= 1.0;
    for (a= 1; a<=max; a++) {
-      double val= 0.42 + 
-	 0.5 * cos(M_PI * a / wid) +
-	 0.08 * cos(M_PI * 2.0 * a / wid);
+      double val= 0.42 +
+         0.5 * cos(M_PI * a / wid) +
+         0.08 * cos(M_PI * 2.0 * a / wid);
       ff->val[max-a]= val;
       ff->val[max+a]= val;
       tot += val * 2.0;
@@ -1145,8 +1143,8 @@ des_lphm(double rate, double f0, double f1, int order, int n_arg, double *arg) {
    ff->len= max*2+1;
    ff->val[max]= tot= 1.0;
    for (a= 1; a<=max; a++) {
-      double val= 0.54 + 
-	 0.46 * cos(M_PI * a / wid);
+      double val= 0.54 +
+         0.46 * cos(M_PI * a / wid);
       ff->val[max-a]= val;
       ff->val[max+a]= val;
       tot += val * 2.0;
@@ -1168,8 +1166,8 @@ des_lphn(double rate, double f0, double f1, int order, int n_arg, double *arg) {
    ff->len= max*2+1;
    ff->val[max]= tot= 1.0;
    for (a= 1; a<=max; a++) {
-      double val= 0.5 + 
-	 0.5 * cos(M_PI * a / wid);
+      double val= 0.5 +
+         0.5 * cos(M_PI * a / wid);
       ff->val[max-a]= val;
       ff->val[max+a]= val;
       tot += val * 2.0;
@@ -1221,29 +1219,29 @@ static struct {
      "Proportional-integral filter, frequency #F" },
    { des_piz, "PiZ/#F",
      "Proportional-integral filter, matched z-transform, frequency #F" },
-   { des_lpbe, "LpBe#O/#F", 
+   { des_lpbe, "LpBe#O/#F",
      "Lowpass Bessel filter, order #O, -3.01dB frequency #F" },
-   { des_hpbe, "HpBe#O/#F", 
+   { des_hpbe, "HpBe#O/#F",
      "Highpass Bessel filter, order #O, -3.01dB frequency #F" },
-   { des_bpbe, "BpBe#O/#R", 
+   { des_bpbe, "BpBe#O/#R",
      "Bandpass Bessel filter, order #O, -3.01dB frequencies #R" },
-   { des_bsbe, "BsBe#O/#R", 
+   { des_bsbe, "BsBe#O/#R",
      "Bandstop Bessel filter, order #O, -3.01dB frequencies #R" },
-   { des_lpbu, "LpBu#O/#F", 
+   { des_lpbu, "LpBu#O/#F",
      "Lowpass Butterworth filter, order #O, -3.01dB frequency #F" },
-   { des_hpbu, "HpBu#O/#F", 
+   { des_hpbu, "HpBu#O/#F",
      "Highpass Butterworth filter, order #O, -3.01dB frequency #F" },
-   { des_bpbu, "BpBu#O/#R", 
+   { des_bpbu, "BpBu#O/#R",
      "Bandpass Butterworth filter, order #O, -3.01dB frequencies #R" },
-   { des_bsbu, "BsBu#O/#R", 
+   { des_bsbu, "BsBu#O/#R",
      "Bandstop Butterworth filter, order #O, -3.01dB frequencies #R" },
    { des_lpch, "LpCh#O/#V/#F",
      "Lowpass Chebyshev filter, order #O, passband ripple #VdB, -3.01dB frequency #F" },
-   { des_hpch, "HpCh#O/#V/#F", 
+   { des_hpch, "HpCh#O/#V/#F",
      "Highpass Chebyshev filter, order #O, passband ripple #VdB, -3.01dB frequency #F" },
-   { des_bpch, "BpCh#O/#V/#R", 
+   { des_bpch, "BpCh#O/#V/#R",
      "Bandpass Chebyshev filter, order #O, passband ripple #VdB, -3.01dB frequencies #R" },
-   { des_bsch, "BsCh#O/#V/#R", 
+   { des_bsch, "BsCh#O/#V/#R",
      "Bandstop Chebyshev filter, order #O, passband ripple #VdB, -3.01dB frequencies #R" },
    { des_lpbez, "LpBeZ#O/#F",
      "Lowpass Bessel filter, matched z-transform, order #O, -3.01dB frequency #F" },
@@ -1332,7 +1330,7 @@ static struct {
 //
 
 typedef struct Spec Spec;
-static char* parse_spec(Spec*);   
+static char* parse_spec(Spec*);
 static FidFilter *auto_adjust_single(Spec *sp, double rate, double f0);
 static FidFilter *auto_adjust_dual(Spec *sp, double rate, double f0, double f1);
 struct Spec {
@@ -1381,9 +1379,9 @@ fid_design(char *spec, double rate, double freq0, double freq1, int f_adj, char 
       rv= filter[sp.fi].rout(rate, f0, f1, sp.order, sp.n_arg, sp.argarr);
    else if (strstr(filter[sp.fi].fmt, "#R"))
       rv= auto_adjust_dual(&sp, rate, f0, f1);
-   else 
+   else
       rv= auto_adjust_single(&sp, rate, f0);
-   
+
    // Generate a long description if required
    if (descp) {
       char *fmt= filter[sp.fi].txt;
@@ -1393,33 +1391,33 @@ fid_design(char *spec, double rate, double freq0, double freq1, int f_adj, char 
       char ch;
       double *arg= sp.argarr;
       int n_arg= sp.n_arg;
-      
+
       while ((ch= *fmt++)) {
-	 if (ch != '#') {
-	    *p++= ch;
-	    continue;
-	 }
-	 
-	 switch (*fmt++) {
-	  case 'O':
-	     p += sprintf(p, "%d", sp.order);
-	     break;
-	  case 'F':
-	     p += sprintf(p, "%g", f0*rate);
-	     break;
-	  case 'R':
-	     p += sprintf(p, "%g-%g", f0*rate, f1*rate);
-	     break;
-	  case 'V':
-	     if (n_arg <= 0) 
-		error("Internal error -- disagreement between filter short-spec\n"
-		      " and long-description over number of arguments");
-	     n_arg--;
-	     p += sprintf(p, "%g", *arg++);
-	     break;
-	  default:
-	     error("Internal error: unknown format in long description: #%c", fmt[-1]);
-	 }
+         if (ch != '#') {
+            *p++= ch;
+            continue;
+         }
+
+         switch (*fmt++) {
+          case 'O':
+             p += sprintf(p, "%d", sp.order);
+             break;
+          case 'F':
+             p += sprintf(p, "%g", f0*rate);
+             break;
+          case 'R':
+             p += sprintf(p, "%g-%g", f0*rate, f1*rate);
+             break;
+          case 'V':
+             if (n_arg <= 0)
+                error("Internal error -- disagreement between filter short-spec\n"
+                      " and long-description over number of arguments");
+             n_arg--;
+             p += sprintf(p, "%g", *arg++);
+             break;
+          default:
+             error("Internal error: unknown format in long description: #%c", fmt[-1]);
+         }
       }
       *p++= 0;
       if (p-desc >= max) error("Internal error: exceeded estimated description buffer");
@@ -1456,16 +1454,16 @@ auto_adjust_single(Spec *sp, double rate, double f0) {
       if ((r0 < M301DB) != (r2 < M301DB)) break;
       a2= 0.5-((0.5-f0)/a); TEST(a2); r2= resp;
       if ((r0 < M301DB) != (r2 < M301DB)) break;
-      if (a == 32) 	// No success
-	 error("auto_adjust_single internal error -- can't establish enclosing range");
+      if (a == 32)      // No success
+         error("auto_adjust_single internal error -- can't establish enclosing range");
    }
 
    incr= r2 > r0;
-   if (a0 > a2) { 
+   if (a0 > a2) {
       a1= a0; a0= a2; a2= a1;
       incr= !incr;
    }
-   
+
    // Binary search
    while (1) {
       a1= 0.5 * (a0 + a2);
@@ -1473,9 +1471,9 @@ auto_adjust_single(Spec *sp, double rate, double f0) {
       TEST(a1);
       if (resp >= 0.9999995 * M301DB && resp < 1.0000005 * M301DB) break;
       if (incr == (resp > M301DB))
-	 a2= a1;
-      else 
-	 a0= a1;
+         a2= a1;
+      else
+         a0= a1;
    }
 
 #undef TEST
@@ -1518,7 +1516,7 @@ auto_adjust_dual(Spec *sp, double rate, double f0, double f1) {
    DESIGN(mid, wid);
    bpass= (fid_response(rv, 0) < 0.5);
    delta= wid * 0.5;
-   
+
    // Try delta changes until we get there
    for (cnt= 0; 1; cnt++, delta *= 0.51) {
       DESIGN(mid, wid);		// I know -- this is redundant
@@ -1528,27 +1526,27 @@ auto_adjust_dual(Spec *sp, double rate, double f0, double f1) {
       wid0= wid;
       mid1= mid + (INC_MID ? delta : -delta);
       wid1= wid + (INC_WID ? delta : -delta);
-      
+
       if (mid0 - wid1 > 0.0 && mid0 + wid1 < 0.5) {
-	 DESIGN(mid0, wid1);
-	 if (MATCH) break;
-	 if (PERR < perr) { perr= PERR; mid= mid0; wid= wid1; }
+         DESIGN(mid0, wid1);
+         if (MATCH) break;
+         if (PERR < perr) { perr= PERR; mid= mid0; wid= wid1; }
       }
-	 
+
       if (mid1 - wid0 > 0.0 && mid1 + wid0 < 0.5) {
-	 DESIGN(mid1, wid0);
-	 if (MATCH) break;
-	 if (PERR < perr) { perr= PERR; mid= mid1; wid= wid0; }
+         DESIGN(mid1, wid0);
+         if (MATCH) break;
+         if (PERR < perr) { perr= PERR; mid= mid1; wid= wid0; }
       }
 
       if (mid1 - wid1 > 0.0 && mid1 + wid1 < 0.5) {
-	 DESIGN(mid1, wid1);
-	 if (MATCH) break;
-	 if (PERR < perr) { perr= PERR; mid= mid1; wid= wid1; }
+         DESIGN(mid1, wid1);
+         if (MATCH) break;
+         if (PERR < perr) { perr= PERR; mid= mid1; wid= wid1; }
       }
 
       if (cnt > 1000)
-	 error("auto_adjust_dual -- design not converging");
+         error("auto_adjust_dual -- design not converging");
    }
 
 #undef INC_WID
@@ -1566,25 +1564,25 @@ auto_adjust_dual(Spec *sp, double rate, double f0, double f1) {
 //	space, drops dead
 //
 
-static void 
+static void
 expand_spec(char *buf, char *bufend, char *str) {
    int ch;
    char *p= buf;
 
    while ((ch= *str++)) {
-      if (p + 10 >= bufend) 
-	 error("Buffer overflow in fidlib expand_spec()");
+      if (p + 10 >= bufend)
+         error("Buffer overflow in fidlib expand_spec()");
       if (ch == '#') {
-	 switch (*str++) {
-	  case 'o': p += sprintf(p, "<optional-order>"); break;
-	  case 'O': p += sprintf(p, "<order>"); break;
-	  case 'F': p += sprintf(p, "<freq>"); break;
-	  case 'R': p += sprintf(p, "<range>"); break;
-	  case 'V': p += sprintf(p, "<value>"); break;
-	  default: p += sprintf(p, "<%c>", str[-1]); break;
-	 }
+         switch (*str++) {
+          case 'o': p += sprintf(p, "<optional-order>"); break;
+          case 'O': p += sprintf(p, "<order>"); break;
+          case 'F': p += sprintf(p, "<freq>"); break;
+          case 'R': p += sprintf(p, "<range>"); break;
+          case 'V': p += sprintf(p, "<value>"); break;
+          default: p += sprintf(p, "<%c>", str[-1]); break;
+         }
       } else {
-	 *p++= ch;
+         *p++= ch;
       }
    }
    *p= 0;
@@ -1609,9 +1607,9 @@ expand_spec(char *buf, char *bufend, char *str) {
 //	'n_coef' argument provides a partial safeguard.
 //
 
-double 
-fid_design_coef(double *coef, int n_coef, char *spec, double rate, 
-		double freq0, double freq1, int adj) {
+double
+fid_design_coef(double *coef, int n_coef, char *spec, double rate,
+                double freq0, double freq1, int adj) {
    FidFilter *filt= fid_design(spec, rate, freq0, freq1, adj, 0);
    FidFilter *ff= filt;
    int a, len;
@@ -1624,13 +1622,13 @@ fid_design_coef(double *coef, int n_coef, char *spec, double rate,
 
    while (ff->typ) {
       if (ff->typ == 'F' && ff->len == 1) {
-	 gain *= ff->val[0];
-	 ff= FFNEXT(ff);
-	 continue;
+         gain *= ff->val[0];
+         ff= FFNEXT(ff);
+         continue;
       }
 
       if (ff->typ != 'I' && ff->typ != 'F')
-	 error("fid_design_coef can't handle FidFilter type: %c", ff->typ);
+         error("fid_design_coef can't handle FidFilter type: %c", ff->typ);
 
       // Initialise to safe defaults
       iir= fir= &const_one;
@@ -1639,53 +1637,53 @@ fid_design_coef(double *coef, int n_coef, char *spec, double rate,
 
       // See if we have an IIR filter
       if (ff->typ == 'I') {
-	 iir= ff->val;
-	 n_iir= ff->len;
-	 iir_cbm= ff->cbm;
-	 iir_adj= 1.0 / ff->val[0];
-	 ff= FFNEXT(ff);
-	 gain *= iir_adj;
+         iir= ff->val;
+         n_iir= ff->len;
+         iir_cbm= ff->cbm;
+         iir_adj= 1.0 / ff->val[0];
+         ff= FFNEXT(ff);
+         gain *= iir_adj;
       }
 
       // See if we have an FIR filter
       if (ff->typ == 'F') {
-	 fir= ff->val;
-	 n_fir= ff->len;
-	 fir_cbm= ff->cbm;
-	 ff= FFNEXT(ff);
+         fir= ff->val;
+         n_fir= ff->len;
+         fir_cbm= ff->cbm;
+         ff= FFNEXT(ff);
       }
 
       // Dump out all non-const coefficients in reverse order
       len= n_fir > n_iir ? n_fir : n_iir;
       for (a= len-1; a>=0; a--) {
-	 // Output IIR if present and non-const
-	 if (a < n_iir && a>0 && 
-	     !(iir_cbm & (1<<(a<15?a:15)))) {
-	    if (cnt++ < n_coef) *coef++= iir_adj * iir[a];
-	 }
+         // Output IIR if present and non-const
+         if (a < n_iir && a>0 &&
+             !(iir_cbm & (1<<(a<15?a:15)))) {
+            if (cnt++ < n_coef) *coef++= iir_adj * iir[a];
+         }
 
-	 // Output FIR if present and non-const
-	 if (a < n_fir && 
-	     !(fir_cbm & (1<<(a<15?a:15)))) {
-	    if (cnt++ < n_coef) *coef++= fir[a];
-	 }
+         // Output FIR if present and non-const
+         if (a < n_fir &&
+             !(fir_cbm & (1<<(a<15?a:15)))) {
+            if (cnt++ < n_coef) *coef++= fir[a];
+         }
       }
    }
 
    if (cnt != n_coef)
       error("fid_design_coef called with the wrong number of coefficients.\n"
-	    "  Given %d, expecting %d: (\"%s\",%g,%g,%g,%d)",
-	    n_coef, cnt, spec, rate, freq0, freq1, adj);
-   
+            "  Given %d, expecting %d: (\"%s\",%g,%g,%g,%d)",
+            n_coef, cnt, spec, rate, freq0, freq1, adj);
+
    free(filt);
    return gain;
 }
-   
+
 //
 //	List all the known filters to the given file handle
 //
 
-void 
+void
 fid_list_filters(FILE *out) {
    int a;
 
@@ -1703,7 +1701,7 @@ fid_list_filters(FILE *out) {
 //	NUL-terminated; returns 1 okay, 0 not enough space
 //
 
-int 
+int
 fid_list_filters_buf(char *buf, char *bufend) {
    int a, cnt;
    char tmp[4096];
@@ -1760,14 +1758,14 @@ fid_flatten(FidFilter *filt) {
    ff= filt;
    while (ff->len) {
       if (ff->typ == 'I')
-	 m_iir += ff->len-1;
+         m_iir += ff->len-1;
       else if (ff->typ == 'F')
-	 m_fir += ff->len-1;
-      else 
-	 error("fid_flatten doesn't know about type %d", ff->typ);
+         m_fir += ff->len-1;
+      else
+         error("fid_flatten doesn't know about type %d", ff->typ);
       ff= FFNEXT(ff);
    }
-   
+
    // Setup the output array
    rv= FFALLOC(2, m_iir + m_fir);
    rv->typ= 'I';
@@ -1784,16 +1782,16 @@ fid_flatten(FidFilter *filt) {
    // Do the convolution
    ff= filt;
    while (ff->len) {
-      if (ff->typ == 'I') 
-	 n_iir= convolve(iir, n_iir, ff->val, ff->len);
-      else 
-	 n_fir= convolve(fir, n_fir, ff->val, ff->len);
+      if (ff->typ == 'I')
+         n_iir= convolve(iir, n_iir, ff->val, ff->len);
+      else
+         n_fir= convolve(fir, n_fir, ff->val, ff->len);
       ff= FFNEXT(ff);
    }
 
    // Sanity check
    if (n_iir != m_iir ||
-       n_fir != m_fir) 
+       n_fir != m_fir)
       error("Internal error in fid_combine() -- array under/overflow");
 
    // Fix iir[0]
@@ -1818,11 +1816,11 @@ parse_spec(Spec *sp) {
    sp->n_arg= 0;
    sp->order= 0;
    sp->f0= 0;
-   sp->f1= 0; 
+   sp->f1= 0;
    sp->adj= 0;
    sp->minlen= -1;
    sp->n_freq= 0;
-   
+
    for (a= 0; 1; a++) {
       char *fmt= filter[a].fmt;
       char *p= sp->spec;
@@ -1831,100 +1829,100 @@ parse_spec(Spec *sp) {
       if (!fmt) return strdupf("Spec-string \"%s\" matches no known format", sp->spec);
 
       while (*p && (ch= *fmt++)) {
-	 if (ch != '#') {
-	    if (ch == *p++) continue;
-	    p= 0; break;
-	 }
+         if (ch != '#') {
+            if (ch == *p++) continue;
+            p= 0; break;
+         }
 
-	 if (isalpha(*p)) { p= 0; break; }
+         if (isalpha(*p)) { p= 0; break; }
 
-	 // Handling a format character
-	 switch (ch= *fmt++) {
-	  default:
-	     return strdupf("Internal error: Unknown format #%c in format: %s", 
-			    fmt[-1], filter[a].fmt);
-	  case 'o':
-	  case 'O':
-	     sp->order= (int)strtol(p, &q, 10);
-	     if (p == q) {
-		if (ch == 'O') goto bad;
-		sp->order= 1;
-	     }
-	     if (sp->order <= 0) 
-		return strdupf("Bad order %d in spec-string \"%s\"", sp->order, sp->spec);
-	     p= q; break;
-	  case 'V':
-	     sp->n_arg++; 
-	     *arg++= strtod(p, &q);
-	     if (p == q) goto bad; 
-	     p= q; break;
-	  case 'F':
-	     sp->minlen= p-1-sp->spec;
-	     sp->n_freq= 1;
-	     sp->adj= (p[0] == '=');
-	     if (sp->adj) p++;
-	     sp->f0= strtod(p, &q);
-	     sp->f1= 0;
-	     if (p == q) goto bad; 
-	     p= q; break;
-	  case 'R':
-	     sp->minlen= p-1-sp->spec;
-	     sp->n_freq= 2;
-	     sp->adj= (p[0] == '=');
-	     if (sp->adj) p++;
-	     sp->f0= strtod(p, &q);
-	     if (p == q) goto bad; 
-	     p= q;
-	     if (*p++ != '-') goto bad;
-	     sp->f1= strtod(p, &q);
-	     if (p == q) goto bad; 
-	     if (sp->f0 > sp->f1) 
-		return strdupf("Backwards frequency range in spec-string \"%s\"", sp->spec);
-	     p= q; break;
-	 }
+         // Handling a format character
+         switch (ch= *fmt++) {
+          default:
+             return strdupf("Internal error: Unknown format #%c in format: %s",
+                            fmt[-1], filter[a].fmt);
+          case 'o':
+          case 'O':
+             sp->order= (int)strtol(p, &q, 10);
+             if (p == q) {
+                if (ch == 'O') goto bad;
+                sp->order= 1;
+             }
+             if (sp->order <= 0)
+                return strdupf("Bad order %d in spec-string \"%s\"", sp->order, sp->spec);
+             p= q; break;
+          case 'V':
+             sp->n_arg++;
+             *arg++= strtod(p, &q);
+             if (p == q) goto bad;
+             p= q; break;
+          case 'F':
+             sp->minlen= p-1-sp->spec;
+             sp->n_freq= 1;
+             sp->adj= (p[0] == '=');
+             if (sp->adj) p++;
+             sp->f0= strtod(p, &q);
+             sp->f1= 0;
+             if (p == q) goto bad;
+             p= q; break;
+          case 'R':
+             sp->minlen= p-1-sp->spec;
+             sp->n_freq= 2;
+             sp->adj= (p[0] == '=');
+             if (sp->adj) p++;
+             sp->f0= strtod(p, &q);
+             if (p == q) goto bad;
+             p= q;
+             if (*p++ != '-') goto bad;
+             sp->f1= strtod(p, &q);
+             if (p == q) goto bad;
+             if (sp->f0 > sp->f1)
+                return strdupf("Backwards frequency range in spec-string \"%s\"", sp->spec);
+             p= q; break;
+         }
       }
 
       if (p == 0) continue;
 
       if (fmt[0] == '/' && fmt[1] == '#' && fmt[2] == 'F') {
-	 sp->minlen= p-sp->spec;
-	 sp->n_freq= 1;
-	 if (sp->in_f0 < 0.0) 
-	    return strdupf("Frequency omitted from filter-spec, and no default provided");
-	 sp->f0= sp->in_f0;
-	 sp->f1= 0;
-	 sp->adj= sp->in_adj;
-	 fmt += 3;
+         sp->minlen= p-sp->spec;
+         sp->n_freq= 1;
+         if (sp->in_f0 < 0.0)
+            return strdupf("Frequency omitted from filter-spec, and no default provided");
+         sp->f0= sp->in_f0;
+         sp->f1= 0;
+         sp->adj= sp->in_adj;
+         fmt += 3;
       } else if (fmt[0] == '/' && fmt[1] == '#' && fmt[2] == 'R') {
-	 sp->minlen= p-sp->spec;
-	 sp->n_freq= 2;
-	 if (sp->in_f0 < 0.0 || sp->in_f1 < 0.0)
-	    return strdupf("Frequency omitted from filter-spec, and no default provided");
-	 sp->f0= sp->in_f0;
-	 sp->f1= sp->in_f1;
-	 sp->adj= sp->in_adj;
-	 fmt += 3;
+         sp->minlen= p-sp->spec;
+         sp->n_freq= 2;
+         if (sp->in_f0 < 0.0 || sp->in_f1 < 0.0)
+            return strdupf("Frequency omitted from filter-spec, and no default provided");
+         sp->f0= sp->in_f0;
+         sp->f1= sp->in_f1;
+         sp->adj= sp->in_adj;
+         fmt += 3;
       }
 
       // Check for trailing unmatched format characters
       if (*fmt) {
       bad:
-	 return strdupf("Bad match of spec-string \"%s\" to format \"%s\"", 
-			sp->spec, filter[a].fmt);
+         return strdupf("Bad match of spec-string \"%s\" to format \"%s\"",
+                        sp->spec, filter[a].fmt);
       }
-      if (sp->n_arg > MAXARG) 
-	 return strdupf("Internal error -- maximum arguments exceeded");
-      
+      if (sp->n_arg > MAXARG)
+         return strdupf("Internal error -- maximum arguments exceeded");
+
       // Set the minlen to the whole string if unset
       if (sp->minlen < 0) sp->minlen= p-sp->spec;
-      
+
       // Save values, return
       sp->fi= a;
       return 0;
    }
    return 0;
 }
-   
+
 
 //
 //	Parse a filter-spec and freq0/freq1 arguments and rewrite them
@@ -1936,10 +1934,10 @@ parse_spec(Spec *sp) {
 //	spec-string is not generated.
 //
 
-void 
+void
 fid_rewrite_spec(char *spec, double freq0, double freq1, int adj,
-		 char **spec1p, 
-		 char **spec2p, double *freq0p, double *freq1p, int *adjp) {
+                 char **spec1p,
+                 char **spec2p, double *freq0p, double *freq1p, int *adjp) {
    Spec sp;
    char *err;
    sp.spec= spec;
@@ -1984,11 +1982,11 @@ fid_rewrite_spec(char *spec, double freq0, double freq1, int adj,
 //
 //	This is really just a convenience function, allowing a filter
 //	to be conveniently dumped to C source code and then
-//	reconstructed.  
+//	reconstructed.
 //
 //	Note that for more general filter generation, FidFilter
 //	instances can be created simply by allocating the memory and
-//	filling them in (see fidlib.h).  
+//	filling them in (see fidlib.h).
 //
 
 FidFilter *
@@ -2003,12 +2001,12 @@ fid_cv_array(double *arr) {
       int len, typ;
 
       typ= (int)(*dp++);
-      if (typ != 'F' && typ != 'I') 
-	 error("Bad type in array passed to fid_cv_array: %g", dp[-1]);
+      if (typ != 'F' && typ != 'I')
+         error("Bad type in array passed to fid_cv_array: %g", dp[-1]);
 
       len= (int)(*dp++);
       if (len < 1)
-	 error("Bad length in array passed to fid_cv_array: %g", dp[-1]);
+         error("Bad length in array passed to fid_cv_array: %g", dp[-1]);
 
       n_head++;
       n_val += len;
@@ -2042,7 +2040,7 @@ fid_cv_array(double *arr) {
 //	free'd once read; otherwise they are left untouched.  The
 //	newly allocated resultant filter is returned, which should be
 //	released with free() when finished with.
-//      
+//
 
 FidFilter *
 fid_cat(int freeme, ...) {
@@ -2056,7 +2054,7 @@ fid_cat(int freeme, ...) {
    va_start(ap, freeme);
    while ((ff0= va_arg(ap, FidFilter*))) {
       for (ff= ff0; ff->typ; ff= FFNEXT(ff))
-	 ;
+         ;
       len += ((char*)ff) - ((char*)ff0);
    }
    va_end(ap);
@@ -2067,7 +2065,7 @@ fid_cat(int freeme, ...) {
    va_start(ap, freeme);
    while ((ff0= va_arg(ap, FidFilter*))) {
       for (ff= ff0; ff->typ; ff= FFNEXT(ff))
-	 ;
+         ;
       cnt= ((char*)ff) - ((char*)ff0);
       memcpy(dst, ff0, cnt);
       dst += cnt;
@@ -2084,7 +2082,7 @@ fid_cat(int freeme, ...) {
 //
 
 // Skip white space (including comments)
-static void 
+static void
 skipWS(char **pp) {
    char *p= *pp;
 
@@ -2102,11 +2100,11 @@ skipWS(char **pp) {
 // Grab a word from the input into the given buffer.  Returns 0: end
 // of file or error, else 1: success.  Error is indicated when the
 // word doesn't fit in the buffer.
-static int 
+static int
 grabWord(char **pp, char *buf, int buflen) {
    char *p, *q;
-   int len; 
-   
+   int len;
+
    skipWS(pp);
    p= *pp;
    if (!*p) return 0;
@@ -2115,16 +2113,16 @@ grabWord(char **pp, char *buf, int buflen) {
    if (*q == ',' || *q == ';' || *q == ')' || *q == ']' || *q == '}') {
       q++;
    } else {
-      while (*q && *q != '#' && !isspace(*q) && 
-	     (*q != ',' && *q != ';' && *q != ')' && *q != ']' && *q != '}'))
-	 q++;
+      while (*q && *q != '#' && !isspace(*q) &&
+             (*q != ',' && *q != ';' && *q != ')' && *q != ']' && *q != '}'))
+         q++;
    }
    len= q-p;
    if (len >= buflen) return 0;
-   
+
    memcpy(buf, p, len);
    buf[len]= 0;
-   
+
    *pp= q;
    return 1;
 }
@@ -2162,89 +2160,89 @@ fid_parse(double rate, char **pp, FidFilter **ffp) {
 #define INCBUF { tmp= realloc(rv, (rvend-rv) * 2); if (!tmp) error("Out of memory"); \
  rvend= (rvend-rv) * 2 + tmp; rvp= (rvp-rv) + tmp; \
  curr= (void*)(((char*)curr) - rv + tmp); rv= tmp; }
-   
+
    while (1) {
       rew= p;
       if (!grabWord(&p, buf, sizeof(buf))) {
-	 if (*p) ERR(p, strdupf("Filter element unexpectedly long -- syntax error?"));
-	 buf[0]= 0;
+         if (*p) ERR(p, strdupf("Filter element unexpectedly long -- syntax error?"));
+         buf[0]= 0;
       }
       if (!buf[0] || !buf[1]) switch (buf[0]) {
        default:
-	  break;
+          break;
        case 0:
        case ',':
        case ';':
        case ')':
        case ']':
        case '}':
-	  // End of filter, return it
-	  tmp= realloc(rv, (rvp-rv) + xtra);
-	  if (!tmp) error("Out of memory");
-	  curr= (void*)((rvp-rv) + tmp);
-	  curr->typ= 0; curr->cbm= 0; curr->len= 0;
-	  *pp= buf[0] ? (p-1) : p;
-	  *ffp= (FidFilter*)tmp;
-	  return 0;
+          // End of filter, return it
+          tmp= realloc(rv, (rvp-rv) + xtra);
+          if (!tmp) error("Out of memory");
+          curr= (void*)((rvp-rv) + tmp);
+          curr->typ= 0; curr->cbm= 0; curr->len= 0;
+          *pp= buf[0] ? (p-1) : p;
+          *ffp= (FidFilter*)tmp;
+          return 0;
        case '/':
-	  if (typ > 0) ERR(rew, strdupf("Filter syntax error; unexpected '/'"));
-	  typ= 'I';
-	  continue;
+          if (typ > 0) ERR(rew, strdupf("Filter syntax error; unexpected '/'"));
+          typ= 'I';
+          continue;
        case 'x':
-	  if (typ > 0) ERR(rew, strdupf("Filter syntax error; unexpected 'x'"));
-	  typ= 'F';
-	  continue;
+          if (typ > 0) ERR(rew, strdupf("Filter syntax error; unexpected 'x'"));
+          typ= 'F';
+          continue;
       }
 
       if (typ < 0) typ= 'F';		// Assume 'x' if missing
       if (!typ) ERR(p, strdupf("Expecting a 'x' or '/' before this"));
 
       if (1 != sscanf(buf, "%lf %c", &val, &dmy)) {
-	 // Must be a predefined filter
-	 FidFilter *ff;
-	 FidFilter *ff1;
-	 Spec sp;
-	 double f0, f1;
-	 char *err;
-	 int len;
+         // Must be a predefined filter
+         FidFilter *ff;
+         FidFilter *ff1;
+         Spec sp;
+         double f0, f1;
+         char *err;
+         int len;
 
-	 if (typ != 'F') ERR(rew, strdupf("Predefined filters cannot be used with '/'"));
+         if (typ != 'F') ERR(rew, strdupf("Predefined filters cannot be used with '/'"));
 
-	 // Parse the filter-spec
-	 memset(&sp, 0, sizeof(sp));
-	 sp.spec= buf;
-	 sp.in_f0= sp.in_f1= -1;
-	 if ((err= parse_spec(&sp))) ERR(rew, err);
-	 f0= sp.f0;
-	 f1= sp.f1;
-	 
-	 // Adjust frequencies to range 0-0.5, and check them
-	 f0 /= rate;
-	 if (f0 > 0.5) ERR(rew, strdupf("Frequency of %gHz out of range with "
-					"sampling rate of %gHz", f0*rate, rate));
-	 f1 /= rate;
-	 if (f1 > 0.5) ERR(rew, strdupf("Frequency of %gHz out of range with "
-					"sampling rate of %gHz", f1*rate, rate));
-	 
-	 // Okay we now have a successful spec-match to filter[sp.fi], and sp.n_arg
-	 // args are now in sp.argarr[]
-	 
-	 // Generate the filter
-	 if (!sp.adj)
-	    ff= filter[sp.fi].rout(rate, f0, f1, sp.order, sp.n_arg, sp.argarr);
-	 else if (strstr(filter[sp.fi].fmt, "#R"))
-	    ff= auto_adjust_dual(&sp, rate, f0, f1);
-	 else 
-	    ff= auto_adjust_single(&sp, rate, f0);
+         // Parse the filter-spec
+         memset(&sp, 0, sizeof(sp));
+         sp.spec= buf;
+         sp.in_f0= sp.in_f1= -1;
+         if ((err= parse_spec(&sp))) ERR(rew, err);
+         f0= sp.f0;
+         f1= sp.f1;
 
-	 // Append it to our FidFilter to return
-	 for (ff1= ff; ff1->typ; ff1= FFNEXT(ff1)) ;
-	 len= ((char*)ff1-(char*)ff);
-	 while (rvp + len + xtra >= rvend) INCBUF;
-	 memcpy(rvp, ff, len); rvp += len;
-	 free(ff);
-	 typ= 0;
-	 continue;
+         // Adjust frequencies to range 0-0.5, and check them
+         f0 /= rate;
+         if (f0 > 0.5) ERR(rew, strdupf("Frequency of %gHz out of range with "
+                                        "sampling rate of %gHz", f0*rate, rate));
+         f1 /= rate;
+         if (f1 > 0.5) ERR(rew, strdupf("Frequency of %gHz out of range with "
+                                        "sampling rate of %gHz", f1*rate, rate));
+
+         // Okay we now have a successful spec-match to filter[sp.fi], and sp.n_arg
+         // args are now in sp.argarr[]
+
+         // Generate the filter
+         if (!sp.adj)
+            ff= filter[sp.fi].rout(rate, f0, f1, sp.order, sp.n_arg, sp.argarr);
+         else if (strstr(filter[sp.fi].fmt, "#R"))
+            ff= auto_adjust_dual(&sp, rate, f0, f1);
+         else
+            ff= auto_adjust_single(&sp, rate, f0);
+
+         // Append it to our FidFilter to return
+         for (ff1= ff; ff1->typ; ff1= FFNEXT(ff1)) ;
+         len= ((char*)ff1-(char*)ff);
+         while (rvp + len + xtra >= rvend) INCBUF;
+         memcpy(rvp, ff, len); rvp += len;
+         free(ff);
+         typ= 0;
+         continue;
       }
 
       // Must be a list of coefficients
@@ -2259,19 +2257,19 @@ fid_parse(double rate, char **pp, FidFilter **ffp) {
 
       // See how many more coefficients we can pick up
       while (1) {
-	 rew= p;
-	 if (!grabWord(&p, buf, sizeof(buf))) {
-	    if (*p) ERR(p, strdupf("Filter element unexpectedly long -- syntax error?"));
-	    buf[0]= 0;
-	 }
-	 if (1 != sscanf(buf, "%lf %c", &val, &dmy)) {
-	    p= rew;
-	    break;
-	 }
-	 while (rvp + sizeof(double) >= rvend) INCBUF;
-	 curr->len++;
-	 *(double*)rvp= val;
-	 rvp += sizeof(double);
+         rew= p;
+         if (!grabWord(&p, buf, sizeof(buf))) {
+            if (*p) ERR(p, strdupf("Filter element unexpectedly long -- syntax error?"));
+            buf[0]= 0;
+         }
+         if (1 != sscanf(buf, "%lf %c", &val, &dmy)) {
+            p= rew;
+            break;
+         }
+         while (rvp + sizeof(double) >= rvend) INCBUF;
+         curr->len++;
+         *(double*)rvp= val;
+         rvp += sizeof(double);
       }
       typ= 0;
       continue;

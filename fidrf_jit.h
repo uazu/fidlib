@@ -1,13 +1,11 @@
 #error "JIT code is no longer maintained -- cmdlist is almost as fast on ix86"
 
 //
-//	JIT-compiled filter-running code.  
+//	JIT-compiled filter-running code.
 //
 //        Copyright (c) 2002-2003 Jim Peters <http://uazu.net/>.  This
-//        file is released under the GNU Lesser General Public License
-//        (LGPL) version 2.1 as published by the Free Software
-//        Foundation.  See the file COPYING_LIB for details, or visit
-//	  <http://www.fsf.org/licenses/licenses.html>.
+//        file is released under the MIT license.  See the file
+//        LICENSE-MIT.
 //
 //	The aim of this version of the filter-running code is to go as
 //	fast as possible (without flattening the sub-filters together)
@@ -61,11 +59,11 @@ struct Routine {
    int hash;		// Hash of routine
    char *code;		// Routine itself
    int len;		// Length of code in bytes
-};   
+};
 
 typedef struct Run {
    int magic;		// Magic: 0x64966325
-   int n_buf;		// Length of working buffer required in doubles	
+   int n_buf;		// Length of working buffer required in doubles
    double *coef;	// Coefficient list
    Routine *rout;	// Routine used
 } Run;
@@ -94,15 +92,15 @@ static unsigned long int do_hash(unsigned char *, unsigned long int, unsigned lo
 //	  %C  4-byte long value count for loop
 //	  %L  Label -- remember this address for looping back to
 //	  %R  1-byte relative jump back to %L address
-//	  %D  1-byte relative address of buffer value.  If zero, this adjusts the 
+//	  %D  1-byte relative address of buffer value.  If zero, this adjusts the
 //		previous byte by ^=0x40 to make it a pure (%edx) form instead of 0(%edx)
-//	  %D+ 1-byte relative address of buffer value as above, plus increment %edx 
+//	  %D+ 1-byte relative address of buffer value as above, plus increment %edx
 //		if we are getting close to the end of the range
 //	  %A  1-byte relative address of coefficient value.  If zero does same as for %D.
-//	  %A+ 1-byte relative address of coefficient value, plus %eax inc 
+//	  %A+ 1-byte relative address of coefficient value, plus %eax inc
 //		if necessary
 //	  %=  Insert code to update %edx and %eax to point to the given offsets
-//	
+//
 //	Startup code
 //
 //	  pushl %ebp
@@ -146,10 +144,10 @@ static unsigned long int do_hash(unsigned char *, unsigned long int, unsigned lo
 #define NEXT(nnd, nna) add("%= E2%R", (nnd)*8, (nna)*8)
 
 //	Fetching/storing buffer values
-//	
+//
 //	tmp= buf[n];
 //	  fldl nn(%edx)
-//	
+//
 //	buf[nn]= iir;
 //	  fld %st(1)
 //	  fstpl nn(%edx)
@@ -158,7 +156,7 @@ static unsigned long int do_hash(unsigned char *, unsigned long int, unsigned lo
 #define PUTB(nn) add("D9C1 DD5A%D+", (nn)*8)
 
 //	FIR element with following IIR element
-//	
+//
 //	fir -= 2 * tmp;
 //	  fsub %st(0),%st(2)
 //	  fsub %st(0),%st(2)
@@ -181,7 +179,7 @@ static unsigned long int do_hash(unsigned char *, unsigned long int, unsigned lo
 #define FIRc(nn) add("D9C0 DC48%A+ DEC3", (nn)*8)
 
 //	FIR element with no following IIR element
-//	
+//
 //	fir -= 2 * tmp;
 //	  fsub %st(0),%st(2)
 //	  fsubp %st(0),%st(2)
@@ -206,7 +204,7 @@ static unsigned long int do_hash(unsigned char *, unsigned long int, unsigned lo
 #define FIR(nn) add("DC48%A+ DEC2", (nn)*8)
 
 //	IIR element
-//	
+//
 //	iir -= coef[nn] * tmp;
 //	  fmull nn(%eax)
 //	  fsubp %st(0),%st(1)
@@ -214,7 +212,7 @@ static unsigned long int do_hash(unsigned char *, unsigned long int, unsigned lo
 #define IIR(nn) add("DC48%A+ DEE9", (nn)*8)
 
 //	Final FIR element of pure-FIR or mixed FIR-IIR stage
-//	
+//
 //	iir= fir + coef[nn] * iir; fir= 0;
 //	  fxch
 //	  fmull nn(%eax)
@@ -254,108 +252,108 @@ static Routine *r_list;	// List of routines or 0
 //	and so is not thread-safe.
 //
 
-static void 
+static void
 add(char *fmt, ...) {
    va_list ap;
    int ch, val;
    va_start(ap, fmt);
 
-   if (r_end - r_cp < 32) 
+   if (r_end - r_cp < 32)
       error("JIT error: routine buffer exceeded");
 
    while ((ch= *fmt++)) {
       if (isspace(ch)) continue;
       if (isdigit(ch) || (ch >= 'A' && ch <= 'F')) {
-	 val= ch >= 'A' ? ch - 'A' + 10 : ch - '0';
-	 ch= *fmt++;
-	 if (!isdigit(ch) && !(ch >= 'A' && ch <= 'F')) 
-	    error("JIT error: Bad format for add() routine");
-	 val= (val*16) + (ch >= 'A' ? ch - 'A' + 10 : ch - '0');
-	 *r_cp++= val;
-	 continue;
+         val= ch >= 'A' ? ch - 'A' + 10 : ch - '0';
+         ch= *fmt++;
+         if (!isdigit(ch) && !(ch >= 'A' && ch <= 'F'))
+            error("JIT error: Bad format for add() routine");
+         val= (val*16) + (ch >= 'A' ? ch - 'A' + 10 : ch - '0');
+         *r_cp++= val;
+         continue;
       }
-      if (ch != '%') 
-	 error("JIT error: add() routine bad format string");
+      if (ch != '%')
+         error("JIT error: add() routine bad format string");
       switch (ch= *fmt++) {
        case 'C':
-	  val= va_arg(ap, int);
-	  r_loop= val;
-	  *r_cp++= val;
-	  *r_cp++= val>>8;
-	  *r_cp++= val>>16;
-	  *r_cp++= val>>24;
-	  break;
+          val= va_arg(ap, int);
+          r_loop= val;
+          *r_cp++= val;
+          *r_cp++= val>>8;
+          *r_cp++= val>>16;
+          *r_cp++= val>>24;
+          break;
        case 'L':
-	  if (r_lab) error("JIT error: two stacked %L formats");
-	  r_lab= r_cp;
-	  break;
+          if (r_lab) error("JIT error: two stacked %L formats");
+          r_lab= r_cp;
+          break;
        case 'R':
-	  if (!r_lab) error("JIT error: %R without matching %L");
-	  val= r_lab - (r_cp+1);
-	  if (val < -128) error("JIT error: %R too far from %L");
-	  *r_cp++= val;
-	  r_lab= 0;
-	  break;
+          if (!r_lab) error("JIT error: %R without matching %L");
+          val= r_lab - (r_cp+1);
+          if (val < -128) error("JIT error: %R too far from %L");
+          *r_cp++= val;
+          r_lab= 0;
+          break;
        case 'D':
-	  val= va_arg(ap, int) - r_edx;
-	  if (val < -128 || val >= 128) error("JIT error: %%edx offset out of range");
-	  if (val == 0) 
-	     r_cp[-1] ^= 0x40;
-	  else 
-	     *r_cp++= val;
-	  if (*fmt == '+') {
-	     fmt++; 
-	     if (val >= 120) {
-		*r_cp++= 0x83;	// addl $120,%edx
-		*r_cp++= 0xC2;
-		*r_cp++= 0x78;
-		r_edx += 120;
-	     }
-	  }
-	  break;
+          val= va_arg(ap, int) - r_edx;
+          if (val < -128 || val >= 128) error("JIT error: %%edx offset out of range");
+          if (val == 0)
+             r_cp[-1] ^= 0x40;
+          else
+             *r_cp++= val;
+          if (*fmt == '+') {
+             fmt++;
+             if (val >= 120) {
+                *r_cp++= 0x83;	// addl $120,%edx
+                *r_cp++= 0xC2;
+                *r_cp++= 0x78;
+                r_edx += 120;
+             }
+          }
+          break;
        case 'A':
-	  val= va_arg(ap, int) - r_eax;
-	  if (val < -128 || val >= 128) error("JIT error: %%eax offset out of range");
-	  if (val == 0) 
-	     r_cp[-1] ^= 0x40;
-	  else 
-	     *r_cp++= val;
-	  if (*fmt == '+') {
-	     fmt++; 
-	     if (val >= 120) {
-		*r_cp++= 0x83;	// addl $120,%eax
-		*r_cp++= 0xC0;
-		*r_cp++= 0x78;
-		r_eax += 120;
-	     }
-	  }
-	  break;
+          val= va_arg(ap, int) - r_eax;
+          if (val < -128 || val >= 128) error("JIT error: %%eax offset out of range");
+          if (val == 0)
+             r_cp[-1] ^= 0x40;
+          else
+             *r_cp++= val;
+          if (*fmt == '+') {
+             fmt++;
+             if (val >= 120) {
+                *r_cp++= 0x83;	// addl $120,%eax
+                *r_cp++= 0xC0;
+                *r_cp++= 0x78;
+                r_eax += 120;
+             }
+          }
+          break;
        case '=':
-	  val= va_arg(ap, int) - r_edx;
-	  if (val != 0) {
-	     if (val < -128 || val >= 128)
-		error("JIT error: %%= adjust for %%edx is out of range");
-	     *r_cp++= 0x83;	// addl $120,%edx
-	     *r_cp++= 0xC2;
-	     *r_cp++= val;
-	     r_edx += val * (r_lab ? r_loop : 1);
-	  }	     
-	  val= va_arg(ap, int) - r_eax;
-	  if (val != 0) {
-	     if (val < -128 || val >= 128)
-		error("JIT error: %%= adjust for %%edx is out of range");
-	     *r_cp++= 0x83;	// addl $120,%edx
-	     *r_cp++= 0xC0;
-	     *r_cp++= val;
-	     r_eax += val * (r_lab ? r_loop : 1);
-	  }	     
-	  break;
+          val= va_arg(ap, int) - r_edx;
+          if (val != 0) {
+             if (val < -128 || val >= 128)
+                error("JIT error: %%= adjust for %%edx is out of range");
+             *r_cp++= 0x83;	// addl $120,%edx
+             *r_cp++= 0xC2;
+             *r_cp++= val;
+             r_edx += val * (r_lab ? r_loop : 1);
+          }
+          val= va_arg(ap, int) - r_eax;
+          if (val != 0) {
+             if (val < -128 || val >= 128)
+                error("JIT error: %%= adjust for %%edx is out of range");
+             *r_cp++= 0x83;	// addl $120,%edx
+             *r_cp++= 0xC0;
+             *r_cp++= val;
+             r_eax += val * (r_lab ? r_loop : 1);
+          }
+          break;
        default:
-	  error("JIT error: bad format for add()");
+          error("JIT error: bad format for add()");
       }
-   }      
-}	  
-      
+   }
+}
+
 
 //
 //	Create an instance of a filter, ready to run.  This returns a
@@ -419,7 +417,7 @@ fid_run_new(FidFilter *filt, double (**funcpp)(void *,double)) {
    r_edx= 0;
    r_eax= 0;
 
-   STARTUP;	// Setup iir/fir running totals on stack, apply gain 
+   STARTUP;	// Setup iir/fir running totals on stack, apply gain
 
    // Generate command and coefficient lists
    while (filt->len) {
@@ -427,14 +425,14 @@ fid_run_new(FidFilter *filt, double (**funcpp)(void *,double)) {
       double *iir, *fir;
       double adj;
       if (filt->typ == 'F' && filt->len == 1) {
-	 gain *= filt->val[0];
-	 filt= FFNEXT(filt);
-	 continue;
+         gain *= filt->val[0];
+         filt= FFNEXT(filt);
+         continue;
       }
       if (filt->typ == 'F') {
-	 iir= 0; n_iir= 0;
-	 fir= filt->val; n_fir= filt->len;
-	 filt= FFNEXT(filt);
+         iir= 0; n_iir= 0;
+         fir= filt->val; n_fir= filt->len;
+         filt= FFNEXT(filt);
       } else if (filt->typ == 'I') {
          iir= filt->val; n_iir= filt->len;
          fir= 0; n_fir= 0;
@@ -449,95 +447,95 @@ fid_run_new(FidFilter *filt, double (**funcpp)(void *,double)) {
          }
       } else
          error("Internal error: fid_run_new can only handle IIR + FIR types");
-      
+
       // Okay, we now have an IIR/FIR pair to process, possibly with
       // n_iir or n_fir == 0 if one half is missing
       cnt= n_iir > n_fir ? n_iir : n_fir;
       if (n_iir) {
-	 adj= 1.0 / iir[0];
-	 gain *= adj;
+         adj= 1.0 / iir[0];
+         gain *= adj;
       }
 
       // Sort out any trailing IIR coefficients where there are more
       // IIR than FIR
       if (cnt > n_fir) {
-	 a= cnt - (n_fir ? n_fir : 1);
-	 if (a >= LOOP) {
-	    FOR(a, o_buf, o_coef);
-	    IIR(o_coef); o_coef++; 
-	    GETB(o_buf); o_buf++;
-	    NEXT(o_buf, o_coef);
-	    o_buf += (a-1);
-	    o_coef += (a-1);
-	    while (a-- > 0) *dp++= iir[--cnt] * adj;
-	 } else while (a-- > 0) {
-	    *dp++= iir[--cnt] * adj;
-	    IIR(o_coef); o_coef++; 
-	    GETB(o_buf); o_buf++;
-	 }
+         a= cnt - (n_fir ? n_fir : 1);
+         if (a >= LOOP) {
+            FOR(a, o_buf, o_coef);
+            IIR(o_coef); o_coef++;
+            GETB(o_buf); o_buf++;
+            NEXT(o_buf, o_coef);
+            o_buf += (a-1);
+            o_coef += (a-1);
+            while (a-- > 0) *dp++= iir[--cnt] * adj;
+         } else while (a-- > 0) {
+            *dp++= iir[--cnt] * adj;
+            IIR(o_coef); o_coef++;
+            GETB(o_buf); o_buf++;
+         }
       }
 
       // Sort out any trailing FIR coefficients where there are more
       // FIR than IIR
       if (cnt > n_iir) {
-	 a= cnt - (n_iir ? n_iir : 1);
-	 if (a >= LOOP) {
-	    FOR(a, o_buf, o_coef);
-	    FIR(o_coef); o_coef++; 
-	    GETB(o_buf); o_buf++;
-	    NEXT(o_buf, o_coef);
-	    o_buf += (a-1);
-	    o_coef += (a-1);
-	    while (a-- > 0) *dp++= fir[--cnt];
-	 } else while (a-- > 0) {
-	    val= fir[--cnt];
-	    if (val == -2.0) FIR_M2;
-	    else if (val == -1.0) FIR_M1;
-	    else if (val == 0.0) FIR_0;
-	    else if (val == 1.0) FIR_P1;
-	    else if (val == 2.0) FIR_P2;
-	    else { *dp++= val; FIR(o_coef); o_coef++; }
-	    GETB(o_buf); o_buf++; 
-	 }
+         a= cnt - (n_iir ? n_iir : 1);
+         if (a >= LOOP) {
+            FOR(a, o_buf, o_coef);
+            FIR(o_coef); o_coef++;
+            GETB(o_buf); o_buf++;
+            NEXT(o_buf, o_coef);
+            o_buf += (a-1);
+            o_coef += (a-1);
+            while (a-- > 0) *dp++= fir[--cnt];
+         } else while (a-- > 0) {
+            val= fir[--cnt];
+            if (val == -2.0) FIR_M2;
+            else if (val == -1.0) FIR_M1;
+            else if (val == 0.0) FIR_0;
+            else if (val == 1.0) FIR_P1;
+            else if (val == 2.0) FIR_P2;
+            else { *dp++= val; FIR(o_coef); o_coef++; }
+            GETB(o_buf); o_buf++;
+         }
       }
 
       // Sort out any common IIR/FIR coefficients remaining
       if (cnt > 1) {
-	 a= cnt - 1;
-	 if (a >= LOOP) {
-	    FOR(a, o_buf, o_coef);
-	    FIRc(o_coef); o_coef++; 
-	    IIR(o_coef); o_coef++; 
-	    GETB(o_buf); o_buf++;
-	    NEXT(o_buf, o_coef);
-	    o_buf += (a-1);
-	    o_coef += 2 * (a-1);
-	    while (a-- > 0) {
-	       *dp++= fir[--cnt] * adj;
-	       *dp++= iir[cnt] * adj;
-	    }
-	 } else while (a-- > 0) {
-	    val= fir[--cnt];
-	    if (val == -2.0) FIRc_M2;
-	    else if (val == -1.0) FIRc_M1;
-	    else if (val == 0.0) ; 
-	    else if (val == 1.0) FIRc_P1;
-	    else if (val == 2.0) FIRc_P2;
-	    else { *dp++= val; FIRc(o_coef); o_coef++; }
-	    
-	    *dp++= iir[cnt] * adj;
-	    IIR(o_coef); o_coef++;
-	    GETB(o_buf); o_buf++;
-	 }
+         a= cnt - 1;
+         if (a >= LOOP) {
+            FOR(a, o_buf, o_coef);
+            FIRc(o_coef); o_coef++;
+            IIR(o_coef); o_coef++;
+            GETB(o_buf); o_buf++;
+            NEXT(o_buf, o_coef);
+            o_buf += (a-1);
+            o_coef += 2 * (a-1);
+            while (a-- > 0) {
+               *dp++= fir[--cnt] * adj;
+               *dp++= iir[cnt] * adj;
+            }
+         } else while (a-- > 0) {
+            val= fir[--cnt];
+            if (val == -2.0) FIRc_M2;
+            else if (val == -1.0) FIRc_M1;
+            else if (val == 0.0) ;
+            else if (val == 1.0) FIRc_P1;
+            else if (val == 2.0) FIRc_P2;
+            else { *dp++= val; FIRc(o_coef); o_coef++; }
+
+            *dp++= iir[cnt] * adj;
+            IIR(o_coef); o_coef++;
+            GETB(o_buf); o_buf++;
+         }
       }
 
       // Handle the final element, according to whether there was any
       // FIR activity in this filter stage
       PUTB(o_buf-1);
       if (n_fir) {
-	 if (fir[0] == 1.0) { FIREND_P1; }
-	 else if (fir[0] == -1.0) { FIREND_M1; }
-	 else { *dp++= fir[0]; FIREND(o_coef); o_coef++; }
+         if (fir[0] == 1.0) { FIREND_P1; }
+         else if (fir[0] == -1.0) { FIREND_M1; }
+         else { *dp++= fir[0]; FIREND(o_coef); o_coef++; }
       }
    }
 
@@ -548,7 +546,7 @@ fid_run_new(FidFilter *filt, double (**funcpp)(void *,double)) {
    coef_cnt= dp-coef_tmp;
    rout_cnt= r_cp-r_buf;
    if (coef_cnt > coef_max ||
-       rout_cnt > rout_max) 
+       rout_cnt > rout_max)
       error("fid_run_new internal error; arrays exceeded");
 
    // Now generate a hash of the code we've created, and see if we've
@@ -556,9 +554,9 @@ fid_run_new(FidFilter *filt, double (**funcpp)(void *,double)) {
    hash= HASH(rout_tmp, rout_cnt);
    for (rout= r_list; rout; rout= rout->nxt) {
       if (rout->hash == hash &&
-	  rout->len == rout_cnt &&
-	  0 == memcmp(rout->code, rout_tmp, rout_cnt)) 
-	 break;
+          rout->len == rout_cnt &&
+          0 == memcmp(rout->code, rout_tmp, rout_cnt))
+         break;
    }
    if (!rout) {
       rout= Alloc(sizeof(Routine) + rout_cnt);
@@ -574,14 +572,14 @@ fid_run_new(FidFilter *filt, double (**funcpp)(void *,double)) {
 
    // Allocate the final Run structure to return
    rr= (Run*)Alloc(sizeof(Run) +
-		   coef_cnt*sizeof(double));
+                   coef_cnt*sizeof(double));
    rr->magic= 0x64966325;
    rr->n_buf= o_buf;
    rr->coef= (double*)(rr+1);
    memcpy(rr->coef, coef_tmp, coef_cnt*sizeof(double));
-   rr->rout= rout; 
+   rr->rout= rout;
    rout->ref++;
-   
+
    free(coef_tmp);
 
    *funcpp= (void*)rout->code;
@@ -599,7 +597,7 @@ fid_run_newbuf(void *run) {
 
    if (rr->magic != 0x64966325)
       error("Bad handle passed to fid_run_newbuf()");
-   
+
    rb= (RunBuf*)ALLOC_ARR(rr->n_buf, double);
    rb->coef= rr->coef;
    rb->mov_cnt= (rr->n_buf-1) * sizeof(double) / 4;
@@ -611,7 +609,7 @@ fid_run_newbuf(void *run) {
 //	Delete an instance
 //
 
-void 
+void
 fid_run_freebuf(void *runbuf) {
    free(runbuf);
 }
@@ -620,18 +618,18 @@ fid_run_freebuf(void *runbuf) {
 //	Delete the filter
 //
 
-void 
+void
 fid_run_free(void *run) {
    Routine *rout= ((Run*)run)->rout;
    rout->ref--;
    if (!rout->ref) {
       // Delete the routine out of the cache
       Routine *p, **prvp;
-      for (prvp= &r_list; (p= *prvp); prvp= &p->nxt) 
-	 if (p == rout) {
-	    *prvp= p->nxt;
-	    break;
-	 }
+      for (prvp= &r_list; (p= *prvp); prvp= &p->nxt)
+         if (p == rout) {
+            *prvp= p->nxt;
+            break;
+         }
       free(rout);
    }
    free(run);
@@ -641,27 +639,27 @@ fid_run_free(void *run) {
 //	Dump all the routines in memory
 //
 
-void 
+void
 fid_run_dump(FILE *out) {
    Routine *rr;
    int a, cnt= 0;
-   fprintf(out, 
-	   "	.file	\"fid_run_dump.s\"\n"
-	   "	.version	\"01.01\"\n"
-	   ".text\n"
-	   "	.align 4\n");
+   fprintf(out,
+           "	.file	\"fid_run_dump.s\"\n"
+           "	.version	\"01.01\"\n"
+           ".text\n"
+           "	.align 4\n");
    for (rr= r_list; rr; rr= rr->nxt, cnt++) {
-      fprintf(out, 
-	      ".globl	process_%d\n"
-	      "	.type	process_%d,@function\n"
-	      "process_%d:\n",
-	      cnt, cnt, cnt);
-      for (a= 0; a<rr->len; a++) 
-	 fprintf(out, "	.byte 0x%02X\n", 255&rr->code[a]);
-      fprintf(out, 
-	      ".Lfe1%d:\n"
-	      "	.size	process_%d,.Lfe1%d-process_%d\n",
-	      cnt, cnt, cnt, cnt);
+      fprintf(out,
+              ".globl	process_%d\n"
+              "	.type	process_%d,@function\n"
+              "process_%d:\n",
+              cnt, cnt, cnt);
+      for (a= 0; a<rr->len; a++)
+         fprintf(out, "	.byte 0x%02X\n", 255&rr->code[a]);
+      fprintf(out,
+              ".Lfe1%d:\n"
+              "	.size	process_%d,.Lfe1%d-process_%d\n",
+              cnt, cnt, cnt, cnt);
    }
 }
 
@@ -744,10 +742,10 @@ acceptable.  Do NOT use for cryptographic purposes.
 --------------------------------------------------------------------
 */
 
-static ub4 
+static ub4
 do_hash(register ub1 *k,        /* the key */
-	register ub4  length,   /* the length of the key */
-	register ub4  initval)  /* the previous hash, or an arbitrary value */
+        register ub4  length,   /* the length of the key */
+        register ub4  initval)  /* the previous hash, or an arbitrary value */
 {
    register ub4 a,b,c,len;
 
@@ -759,11 +757,11 @@ do_hash(register ub1 *k,        /* the key */
    /*---------------------------------------- handle most of the key */
    while (len >= 12)
       {
-	 a += (k[0] +((ub4)k[1]<<8) +((ub4)k[2]<<16) +((ub4)k[3]<<24));
-	 b += (k[4] +((ub4)k[5]<<8) +((ub4)k[6]<<16) +((ub4)k[7]<<24));
-	 c += (k[8] +((ub4)k[9]<<8) +((ub4)k[10]<<16)+((ub4)k[11]<<24));
-	 mix(a,b,c);
-	 k += 12; len -= 12;
+         a += (k[0] +((ub4)k[1]<<8) +((ub4)k[2]<<16) +((ub4)k[3]<<24));
+         b += (k[4] +((ub4)k[5]<<8) +((ub4)k[6]<<16) +((ub4)k[7]<<24));
+         c += (k[8] +((ub4)k[9]<<8) +((ub4)k[10]<<16)+((ub4)k[11]<<24));
+         mix(a,b,c);
+         k += 12; len -= 12;
       }
 
    /*------------------------------------- handle the last 11 bytes */
@@ -773,7 +771,7 @@ do_hash(register ub1 *k,        /* the key */
        case 11: c+=((ub4)k[10]<<24);
        case 10: c+=((ub4)k[9]<<16);
        case 9 : c+=((ub4)k[8]<<8);
-	  /* the first byte of c is reserved for the length */
+          /* the first byte of c is reserved for the length */
        case 8 : b+=((ub4)k[7]<<24);
        case 7 : b+=((ub4)k[6]<<16);
        case 6 : b+=((ub4)k[5]<<8);
@@ -782,7 +780,7 @@ do_hash(register ub1 *k,        /* the key */
        case 3 : a+=((ub4)k[2]<<16);
        case 2 : a+=((ub4)k[1]<<8);
        case 1 : a+=k[0];
-	  /* case 0: nothing left to add */
+          /* case 0: nothing left to add */
       }
    mix(a,b,c);
    /*-------------------------------------------- report the result */
